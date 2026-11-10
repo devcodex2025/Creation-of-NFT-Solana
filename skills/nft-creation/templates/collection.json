@@ -1,0 +1,10 @@
+{
+  "name": "My Collection",
+  "symbol": "MYC",
+  "description": "What this collection is, in one or two sentences.",
+  "image": "art/collection.webp",
+  "external_url": "https://example.com",
+  "attributes": [
+    { "trait_type": "Collection", "value": "My Collection" }
+  ]
+}

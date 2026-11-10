@@ -1,0 +1,11 @@
+{
+  "name": "Lil Turtle #1",
+  "symbol": "LIL",
+  "description": "A small turtle with a big heart, wearing a hat.",
+  "image": "assets/lil_turtle_new.avif",
+  "external_url": "https://lil-turtle.framer.website/",
+  "attributes": [
+    { "trait_type": "Background", "value": "Red" },
+    { "trait_type": "Headdress", "value": "Hat" }
+  ]
+}

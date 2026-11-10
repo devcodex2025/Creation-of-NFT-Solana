@@ -1,0 +1,12 @@
+{
+  "name": "My Collection #1",
+  "symbol": "MYC",
+  "description": "A unique item from My Collection.",
+  "image": "art/1.webp",
+  "external_url": "https://example.com",
+  "attributes": [
+    { "trait_type": "Background", "value": "Green" },
+    { "trait_type": "Eyes", "value": "Sleepy" },
+    { "trait_type": "Rarity", "value": 7, "display_type": "number" }
+  ]
+}

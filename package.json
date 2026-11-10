@@ -1,26 +1,62 @@
 {
   "name": "creation-of-nft-solana",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "version": "2.0.0",
+  "description": "Create, verify, update and inspect professional Solana NFTs with Metaplex Token Metadata, Umi and Arweave (Irys) storage. Includes a reusable AI agent skill for NFT creation.",
+  "keywords": [
+    "solana",
+    "nft",
+    "metaplex",
+    "token-metadata",
+    "umi",
+    "arweave",
+    "irys",
+    "spl-token",
+    "web3",
+    "blockchain",
+    "solana-nft",
+    "nft-collection",
+    "candy-machine",
+    "agent-skills",
+    "claude-skill",
+    "opencode-skill",
+    "typescript"
+  ],
+  "author": "devcodex2025",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devcodex2025/Creation-of-NFT-Solana.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "bugs": {
+    "url": "https://github.com/devcodex2025/Creation-of-NFT-Solana/issues"
+  },
+  "homepage": "https://github.com/devcodex2025/Creation-of-NFT-Solana#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "keypair": "esrun src/commands/keypair.ts",
+    "balance": "esrun src/commands/balance.ts",
+    "fund": "esrun src/commands/fund.ts",
+    "create:collection": "esrun src/commands/create-collection.ts",
+    "create:nft": "esrun src/commands/create-nft.ts",
+    "verify": "esrun src/commands/verify-collection.ts",
+    "update": "esrun src/commands/update-nft.ts",
+    "show": "esrun src/commands/show-nft.ts",
+    "test:e2e": "esrun tests/e2e.localnet.ts",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
+    "@metaplex-foundation/umi": "^1.2.0",
     "@metaplex-foundation/umi-bundle-defaults": "^1.2.0",
     "@metaplex-foundation/umi-uploader-irys": "^1.2.0",
-    "@solana-developers/helpers": "^2.8.1",
     "@solana/web3.js": "^1.98.2",
-    "dotenv": "^17.2.1",
-    "esrun": "^3.2.30",
-    "i": "^0.3.7",
-    "npm": "^11.5.1"
+    "dotenv": "^17.2.1"
   },
   "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esrun": "^3.2.30",
     "typescript": "^5.8.3"
   }
 }

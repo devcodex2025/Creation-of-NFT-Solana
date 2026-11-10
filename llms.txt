@@ -1,0 +1,49 @@
+# Solana NFT Creation Toolkit
+
+> Create, mint, verify, update and inspect professional NFTs on Solana with
+> Metaplex Token Metadata, Umi and Arweave (Irys). Includes a production CLI
+> and an installable AI agent skill.
+
+## Install
+
+```bash
+npm install
+cp .env.example .env
+npm run keypair
+```
+
+## Commands
+
+- `npm run create:collection` — create a Metaplex collection NFT.
+- `npm run create:nft` — mint an NFT into the collection and verify it.
+- `npm run verify` — verify an existing NFT's collection membership.
+- `npm run update` — update metadata, image, royalty, authority or immutability.
+- `npm run show` — print on-chain and off-chain NFT data.
+- `npm run test:e2e` — full local-validator test.
+
+## Skill
+
+`skills/nft-creation/SKILL.md` — professional NFT creation workflow for AI
+agents. Install with:
+
+```bash
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana
+```
+
+## Docs
+
+- [README](README.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Metadata standard](skills/nft-creation/references/metadata-standard.md)
+- [Launch checklist](skills/nft-creation/references/launch-checklist.md)
+- [Storage](skills/nft-creation/references/storage.md)
+- [Code recipes](skills/nft-creation/references/code-recipes.md)
+
+## Notes for AI agents
+
+- Token Metadata limits: name ≤ 32 bytes, symbol ≤ 10, URI ≤ 200.
+- Always verify collection membership and re-fetch the asset after a mint.
+- Upload the image before the metadata JSON.
+- Never set `isMutable: false` before metadata is final.
+- Never handle seed phrases; use a keypair file or wallet adapter.

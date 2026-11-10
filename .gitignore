@@ -1,3 +1,21 @@
-.env
-keypair.json
+# Dependencies
 node_modules/
+
+# Secrets — never commit these
+.env
+.env.local
+keypair.json
+*.keypair.json
+
+# Generated local state (collection + NFT addresses per cluster)
+state/
+uploads/
+
+# Tooling
+dist/
+*.log
+.DS_Store
+Thumbs.db
+
+# Test scratch
+.tmp/

@@ -1,0 +1,11 @@
+{
+  "name": "Lil Turtle Collection",
+  "symbol": "LIL",
+  "description": "A collection of cute lil turtle NFTs living on Solana.",
+  "image": "assets/lil_turtle_collection.webp",
+  "external_url": "https://lil-turtle.framer.website/",
+  "attributes": [
+    { "trait_type": "Collection", "value": "Lil Turtle" },
+    { "trait_type": "Theme", "value": "Cute" }
+  ]
+}
