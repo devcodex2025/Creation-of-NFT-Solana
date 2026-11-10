@@ -10,7 +10,9 @@ import {
   buildOffchainMetadata,
   loadMetadataTemplate,
   normalizeAttributes,
+  parseAttributesInput,
   parseRoyaltyBps,
+  readJsonFile,
 } from "../lib/metadata";
 import { saveCollection, setWallet } from "../lib/state";
 import { sendAndConfirm } from "../lib/tx";
@@ -31,11 +33,11 @@ const externalUrl = getString(flags, "external-url", template.external_url);
 const royaltyBps = getString(flags, "royalty-bps") !== undefined
   ? parseRoyaltyBps(getString(flags, "royalty-bps"))
   : parseRoyaltyBps(Math.round(getNumber(flags, "royalty", 0) * 100));
-const attributes = normalizeAttributes(
-  getString(flags, "attributes")
-    ? JSON.parse(getString(flags, "attributes") as string)
-    : template.attributes,
-);
+const attributesFile = getString(flags, "attributes-file");
+const attributes = attributesFile
+  ? normalizeAttributes(readJsonFile(attributesFile))
+  : parseAttributesInput(getString(flags, "attributes")) ??
+    normalizeAttributes(template.attributes);
 
 assertOnChainLimits({ name, symbol });
 

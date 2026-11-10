@@ -17,7 +17,9 @@ import {
   buildOffchainMetadata,
   loadMetadataTemplate,
   normalizeAttributes,
+  parseAttributesInput,
   parseRoyaltyBps,
+  readJsonFile,
 } from "../lib/metadata";
 import { readState, updateNftRecord } from "../lib/state";
 import { sendAndConfirm } from "../lib/tx";
@@ -63,11 +65,11 @@ const imagePath = getString(flags, "image", template.image);
 const externalUrl =
   getString(flags, "external-url", template.external_url) ??
   existing.external_url;
-const attributes = normalizeAttributes(
-  getString(flags, "attributes")
-    ? JSON.parse(getString(flags, "attributes") as string)
-    : template.attributes ?? existing.attributes,
-);
+const attributesFile = getString(flags, "attributes-file");
+const attributes = attributesFile
+  ? normalizeAttributes(readJsonFile(attributesFile))
+  : parseAttributesInput(getString(flags, "attributes")) ??
+    normalizeAttributes(template.attributes ?? existing.attributes);
 const royaltyBps = getString(flags, "royalty-bps") !== undefined
   ? parseRoyaltyBps(getString(flags, "royalty-bps"))
   : getString(flags, "royalty") !== undefined

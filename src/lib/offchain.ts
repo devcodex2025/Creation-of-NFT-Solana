@@ -24,7 +24,7 @@ export async function fetchOffchainMetadata(
   try {
     if (uri.startsWith("file://")) {
       return JSON.parse(
-        await readFile(fileURLToPath(uri), "utf8"),
+        (await readFile(fileURLToPath(uri), "utf8")).replace(/^\uFEFF/, ""),
       ) as OffchainMetadataJson;
     }
     if (!uri.startsWith("http")) return null;

@@ -50,7 +50,9 @@ export function readJsonFile<T>(filePath: string): T {
     throw new Error(`JSON file not found: ${resolved}`);
   }
   try {
-    return JSON.parse(readFileSync(resolved, "utf8")) as T;
+    return JSON.parse(
+      readFileSync(resolved, "utf8").replace(/^\uFEFF/, ""),
+    ) as T;
   } catch (error) {
     throw new Error(
       `Could not parse ${resolved} as JSON: ${(error as Error).message}`,
@@ -114,8 +116,21 @@ export function normalizeAttributes(value: unknown): NftAttribute[] {
   });
 }
 
-/** 10000 basis points = 100%. */
-export function parseRoyaltyBps(value: number | string | undefined): number {
+export function parseAttributesInput(
+  value: string | undefined,
+): NftAttribute[] | undefined {
+  if (!value) return undefined;
+  try {
+    return normalizeAttributes(JSON.parse(value));
+  } catch (error) {
+    throw new Error(
+      `--attributes must be a JSON array, e.g. [{"trait_type":"Background","value":"Red"}]. ` +
+        `Received: ${value}. Parse error: ${(error as Error).message}`,
+    );
+  }
+}
+
+/** 10000 basis points = 100%. */export function parseRoyaltyBps(value: number | string | undefined): number {
   if (value === undefined) return 0;
   const parsed = typeof value === "string" ? Number(value) : value;
   if (!Number.isInteger(parsed) || parsed < 0 || parsed > 10000) {

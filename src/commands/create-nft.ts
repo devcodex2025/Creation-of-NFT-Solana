@@ -21,7 +21,9 @@ import {
   buildOffchainMetadata,
   loadMetadataTemplate,
   normalizeAttributes,
+  parseAttributesInput,
   parseRoyaltyBps,
+  readJsonFile,
 } from "../lib/metadata";
 import { readState, saveNft, setWallet } from "../lib/state";
 import { sendAndConfirm } from "../lib/tx";
@@ -57,11 +59,11 @@ const description =
 const image =
   getString(flags, "image", template.image) ?? "assets/lil_turtle.avif";
 const externalUrl = getString(flags, "external-url", template.external_url);
-const attributes = normalizeAttributes(
-  getString(flags, "attributes")
-    ? JSON.parse(getString(flags, "attributes") as string)
-    : template.attributes,
-);
+const attributesFile = getString(flags, "attributes-file");
+const attributes = attributesFile
+  ? normalizeAttributes(readJsonFile(attributesFile))
+  : parseAttributesInput(getString(flags, "attributes")) ??
+    normalizeAttributes(template.attributes);
 const royaltyBps = getString(flags, "royalty-bps") !== undefined
   ? parseRoyaltyBps(getString(flags, "royalty-bps"))
   : parseRoyaltyBps(Math.round(getNumber(flags, "royalty", 0) * 100));
@@ -70,6 +72,38 @@ const shouldVerify = !hasFlag(flags, "skip-verify");
 assertOnChainLimits({ name, symbol });
 
 const umi = createProjectUmi();
+
+// Preflight: never mint against a collection that does not exist on this
+// cluster (a common failure after switching clusters or resetting a validator).
+const collectionKey = umiPublicKey(collectionAddress);
+const collectionAsset = await fetchDigitalAsset(umi, collectionKey).catch(
+  () => null,
+);
+
+if (!collectionAsset) {
+  throw new Error(
+    `Collection ${collectionAddress} was not found on ${cluster}. ` +
+      "Create it first or pass the right --collection address.",
+  );
+}
+
+if (collectionAsset.metadata.collectionDetails.__option !== "Some") {
+  throw new Error(
+    `${collectionAddress} is an NFT but not a collection parent. ` +
+      "Create it with `npm run create:collection` (isCollection: true).",
+  );
+}
+
+if (
+  shouldVerify &&
+  collectionAsset.metadata.updateAuthority !== umi.identity.publicKey
+) {
+  throw new Error(
+    `Wallet ${umi.identity.publicKey} is not the update authority of collection ${collectionAddress}. ` +
+      `The authority is ${collectionAsset.metadata.updateAuthority}. ` +
+      "Mint with the authority wallet, pass --skip-verify and verify later, or use a collection you control.",
+  );
+}
 
 console.log(`\n🖼️  Minting NFT into collection`);
 console.log(`   Cluster    : ${cluster} (${rpcUrl})`);

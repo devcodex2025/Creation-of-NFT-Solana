@@ -153,6 +153,7 @@ configuration from `.env` or the environment.
 | `--royalty` | `0` | Percent, e.g. `5` |
 | `--royalty-bps` | — | Exact basis points, overrides `--royalty` |
 | `--attributes` | from template | JSON array of traits |
+| `--attributes-file` | — | JSON file containing an attribute array |
 | `--json` | — | Metadata template, see `metadata/collection.example.json` |
 
 ### `create:nft`
@@ -165,6 +166,7 @@ configuration from `.env` or the environment.
 | `--image` | `assets/lil_turtle.avif` | Any supported image type |
 | `--collection` | from state | Collection mint address |
 | `--attributes` | — | JSON array (quote it carefully in PowerShell) |
+| `--attributes-file` | — | JSON file containing an attribute array |
 | `--json` | — | Metadata template, see `metadata/nft.example.json` |
 | `--royalty` | `0` | Percent |
 | `--skip-verify` | off | Mint without verifying into the collection |
@@ -184,6 +186,7 @@ configuration from `.env` or the environment.
 | `--name`, `--symbol`, `--description` | current values | Only pass what changes |
 | `--image` | current image | Uploads a new image |
 | `--attributes` | current attributes | Replaces the trait list |
+| `--attributes-file` | — | JSON file with the new trait list |
 | `--royalty` / `--royalty-bps` | current royalty | |
 | `--new-authority` | — | Transfer update authority |
 | `--immutable` | off | **Permanent**: metadata can never change again |
@@ -359,6 +362,7 @@ Or copy `skills/nft-creation/` into your agent's skills directory:
 | `Not the update authority` | Wrong keypair | Use the collection's update authority |
 | `Verified: false` after mint | Collection authority differs | Run `verify` with the collection authority |
 | `Name is N bytes` | UTF-8 limit | Shorten the name |
+| `Collection ... was not found` | State points at an old ledger | Re-create the collection or pass `--collection` |
 | `insufficient funds for rent` | Wallet below ~0.02 SOL | Fund the wallet |
 | Irys upload hangs | Network/funding | Check balance, retry, or use `STORAGE=local` locally |
 
