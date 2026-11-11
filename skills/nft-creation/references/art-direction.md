@@ -24,9 +24,7 @@ commands use as their example.
 
 ![Reference collection art](../../../assets/lil_turtle_collection.webp)
 
-Read it as a composition reference, not a resolution one. The file is 250×250,
-so it breaks the canvas rule above and has to be re-rendered at 2000 px or more
-before a real mint. What it does get right:
+What it gets right:
 
 - Square 1:1, so no marketplace crop cuts the character.
 - Silhouette survives 64 px: head, horns and shell stay readable.
