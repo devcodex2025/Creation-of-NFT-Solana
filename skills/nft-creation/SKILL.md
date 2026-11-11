@@ -1,6 +1,6 @@
 ---
 name: nft-creation
-description: Create professional NFT collections on Solana end to end with Metaplex — art and metadata standards, Arweave/Irys storage, collection verification, royalties, updates, launch checks and mint troubleshooting. Use when minting NFTs, launching an NFT collection, writing or fixing NFT metadata, verifying collection membership, updating NFT metadata, or debugging Solana NFT mint errors.
+description: Create a verified Solana NFT bound to a collection, end to end. Walks the whole path in order, from exporting art to spec and writing metadata that stays inside Metaplex byte limits, through uploading the image and then the JSON to Arweave, creating the collection, minting the item, and verifying collection membership with the collection's update authority so the item actually appears inside the collection instead of floating outside it. Includes honest royalty expectations, per-item cost planning, a pre-mint and post-mint checklist, a runnable Token Metadata toolkit with per-cluster state, and an end-to-end test that proves verification works. Use when minting NFTs, launching an NFT collection, writing or fixing NFT metadata JSON, verifying collection membership, updating metadata or royalties, or diagnosing mint errors such as NameTooLong, UpdateAuthorityIncorrect or unverified items.
 license: MIT
 metadata:
   author: devcodex2025
@@ -13,6 +13,15 @@ metadata:
 Build collections that look right, resolve everywhere, and can still be
 maintained six months after mint. This skill covers the decisions and the code,
 not just the happy path.
+
+The outcome it targets: an NFT that is verified as a member of its collection,
+so it appears inside that collection in wallets and marketplaces instead of
+floating next to it as an unrelated asset.
+
+Scope: this skill owns the decisions that break a launch: art export, metadata
+correctness, upload order, verification, authority, cost, timing. Calling the
+program is the easy part. The order and the checks around it are what keep an
+item verified, inside its collection, and visible on marketplaces months later.
 
 ## When to use this skill
 

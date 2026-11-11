@@ -17,6 +17,25 @@ that separates a collection people save from one they scroll past.
 Never upscale a 512×512 image to 3000×3000. Mint at the resolution you actually
 have, or regenerate at higher resolution.
 
+## Reference art
+
+`assets/lil_turtle_collection.webp` in this repository is the image the toolkit
+commands use as their example.
+
+![Reference collection art](../../../assets/lil_turtle_collection.webp)
+
+Read it as a composition reference, not a resolution one. The file is 250×250,
+so it breaks the canvas rule above and has to be re-rendered at 2000 px or more
+before a real mint. What it does get right:
+
+- Square 1:1, so no marketplace crop cuts the character.
+- Silhouette survives 64 px: head, horns and shell stay readable.
+- Flat color with one light source, so it works on light and dark UI alike.
+- No text, no watermark, no hairlines that disappear under compression.
+
+Judge a new draft the same way. Shrink it to 64 px. If you cannot tell what it
+is, the art needs work, not the mint script.
+
 ## Generative collections
 
 ### Layers
