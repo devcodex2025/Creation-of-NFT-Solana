@@ -1,6 +1,6 @@
 ---
 name: nft-creation
-description: Create a Solana NFT from an empty folder to a verified collection member, covering every stage in one place, from art export and metadata JSON within Metaplex byte limits through image and JSON upload to Arweave, collection creation, item mint, and collection verification signed by the collection's update authority. The result is confirmed on chain, with the item marked verified inside its collection, so wallets and marketplaces show it as part of that collection instead of as a stray asset. Each stage is enforced by the bundled toolkit, which checks limits before spending SOL, tracks addresses per cluster, and ships an end-to-end test that proves the verified state. Use when minting NFTs, launching an NFT collection, writing or fixing NFT metadata JSON, verifying collection membership, updating metadata or royalties, or diagnosing mint errors such as NameTooLong, UpdateAuthorityIncorrect or unverified items.
+description: Create a Solana NFT from an empty folder to a verified collection member, covering every stage in one place, from art export and metadata JSON within Metaplex byte limits through image and JSON upload to Arweave, collection creation, item mint, and collection verification signed by the collection's update authority. The result is confirmed on chain, with the item marked verified inside its collection, so wallets and marketplaces show it as part of that collection instead of as a stray asset. Each stage is enforced by the bundled toolkit, which checks limits before spending SOL, tracks addresses per cluster, and ships an end-to-end test. Every fee is paid on chain to Solana and to storage, and the toolkit takes no fee of its own. Use when minting NFTs, launching an NFT collection, writing or fixing NFT metadata JSON, verifying collection membership, updating metadata or royalties, or diagnosing mint errors such as NameTooLong, UpdateAuthorityIncorrect or unverified items.
 license: MIT
 metadata:
   author: devcodex2025
@@ -223,6 +223,11 @@ Approximate mainnet costs per item:
 
 Rent is locked, not spent. It returns only if the accounts are closed or the
 NFT is burned. Budget 10–20% extra for retries and failed transactions.
+
+Every line above is paid on chain, straight from your wallet to Solana and to
+the storage network. The toolkit collects nothing on top. There is no service
+fee, no platform cut and no hidden markup on rent or uploads, so what you see
+in the explorer is the full cost.
 
 ## Launch checklist (short)
 

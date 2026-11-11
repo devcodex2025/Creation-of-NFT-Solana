@@ -227,6 +227,10 @@ On-chain accounts and what they cost:
 | Token account | ~0.002 SOL | Only by closing it |
 | Transaction fees | ~0.000005 SOL per tx | No |
 
+These are the only costs. Every one of them is paid on chain from your wallet to
+Solana and to the storage network. The toolkit takes no fee of its own, adds no
+markup, and holds no funds at any point.
+
 ## Project structure
 
 ```text
