@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.2.0 — 2026-11-12
+
+### Changed
+
+- Redesigned the wallet approval page. It now follows the operating system
+  light or dark theme instead of a fixed dark card, lists every discovered
+  wallet with its icon, and gives each one its own Connect action.
+- Added an explicit empty state with a working "Scan again" button, and an
+  approval counter that updates as requests are signed.
+- The page no longer reports a red error when the CLI closes the bridge after a
+  successful run. It says the connection closed and to close the tab.
+- Status text sits below the connected account, where the next action happens.
+
+### Accessibility
+
+- Every text pairing in both themes meets WCAG AA; the accent text is 6.2:1 or
+  better and the dark accent is 9.8:1.
+- Visible 2px focus ring on every button, 44px minimum target size, native
+  buttons, and an `aria-live` status region.
+- No emoji, no em dashes, no gradients, no glow.
+
 ## 2.1.1 — 2026-11-12
 
 ### Fixed

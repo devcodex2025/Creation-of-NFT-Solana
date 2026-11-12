@@ -140,6 +140,11 @@ try {
     page.body.includes("Phantom, Solflare or Backpack"),
   );
   check("page scripts parse", inlineScriptParses(page.body));
+  check("page has an empty state with rescan", page.body.includes("Scan again"));
+  check(
+    "page ships light and dark palettes",
+    page.body.includes("prefers-color-scheme: dark"),
+  );
   check("page never embeds the keypair path", !page.body.includes("keypair.json"));
 
   const wrongTokenConnect = await send(`${origin}/api/connect`, {
@@ -176,7 +181,14 @@ try {
   const wallet = await connecting;
   check("bridge reports the connected wallet", wallet.publicKey === publicKey, wallet.publicKey);
 
-  wallet.close();
+  const closing = wallet.close();
+  const finished = await send(`${origin}/api/pending?token=${token}`);
+  check(
+    "close() reports a finished bridge",
+    finished.status === 200 && finished.body.includes('"finished":true'),
+    `${finished.status} ${finished.body}`,
+  );
+  await closing;
 
   let closed = false;
   try {

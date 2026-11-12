@@ -16,7 +16,7 @@ let address = explicitAddress;
 if (!address && signerMode === "browser") {
   const wallet = await connectBrowserWallet();
   address = wallet.publicKey;
-  wallet.close();
+  await wallet.close();
 } else if (!address) {
   const keypair = loadKeypair(getString(flags, "keypair"));
   address = keypair.publicKey.toBase58();

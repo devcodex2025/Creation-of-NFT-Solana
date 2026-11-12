@@ -60,7 +60,7 @@ uploads.
 ### 2. Install
 
 ```bash
-git clone --branch v2.1.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
+git clone --branch v2.2.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -444,7 +444,7 @@ verifying collections, royalties, launch checks and error handling.
 Install with the [skills CLI](https://www.skills.sh/):
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.1.1/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.2.0/skills/solana-nft-creation
 ```
 
 Or copy `skills/solana-nft-creation/` into your agent's skills directory:
@@ -468,7 +468,7 @@ the commands; it needs the toolkit too.
 2. Clone the pinned toolkit where the agent can reach it:
 
    ```bash
-   git clone --branch v2.1.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+   git clone --branch v2.2.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
    cd Creation-of-NFT-Solana
    npm ci
    cp .env.example .env

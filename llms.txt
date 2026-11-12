@@ -7,7 +7,7 @@
 ## Install
 
 ```bash
-git clone --branch v2.1.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.2.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -45,7 +45,7 @@ Every fee is paid on chain to Solana and to storage; the toolkit takes no fee.
 agents. Install with:
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.1.1/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.2.0/skills/solana-nft-creation
 ```
 
 Verify discovery without installing:
