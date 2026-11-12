@@ -7,19 +7,37 @@
 ## Install
 
 ```bash
-npm install
+git clone --branch v2.0.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+cd Creation-of-NFT-Solana
+npm ci
 cp .env.example .env
 npm run keypair
 ```
 
 ## Commands
 
-- `npm run create:collection` — create a Metaplex collection NFT.
-- `npm run create:nft` — mint an NFT into the collection and verify it.
-- `npm run verify` — verify an existing NFT's collection membership.
-- `npm run update` — update metadata, image, royalty, authority or immutability.
-- `npm run show` — print on-chain and off-chain NFT data.
+- `npx esrun src/commands/create-collection.ts` — create a Metaplex collection NFT.
+- `npx esrun src/commands/create-nft.ts` — mint an NFT into the collection and verify it.
+- `npx esrun src/commands/verify-collection.ts` — verify an existing NFT's collection membership.
+- `npx esrun src/commands/update-nft.ts` — update metadata, image, royalty, authority or immutability.
+- `npx esrun src/commands/show-nft.ts` — print on-chain and off-chain NFT data.
+- `npx esrun src/commands/balance.ts` — show the wallet balance.
 - `npm run test:e2e` — full local-validator test.
+- `npm run test:bridge` — security checks for the browser wallet bridge.
+
+Prefer `npx esrun` over `npm run` on Windows PowerShell 7 with npm 11: npm drops
+the first `--` and the flags never reach the script.
+
+## Signing
+
+- Default: keypair file from `--keypair`, `KEYPAIR_PATH`, `./keypair.json` or
+  `~/.config/solana/id.json`. Explicit paths must exist.
+- `--signer browser`: Phantom, Solflare or Backpack sign through a temporary
+  page on `127.0.0.1`. The key never leaves the extension. A human must approve
+  two or three requests per mint.
+- `--signer readonly`: no signer, for commands that only read.
+
+Every fee is paid on chain to Solana and to storage; the toolkit takes no fee.
 
 ## Skill
 
@@ -27,8 +45,18 @@ npm run keypair
 agents. Install with:
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.0.0/skills/nft-creation
 ```
+
+Verify discovery without installing:
+
+```bash
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana -l
+```
+
+The skill drives the CLI above; clone the pinned toolkit first. See the
+"First run" section of the README for the three-step setup and an example
+prompt.
 
 ## Docs
 
@@ -46,4 +74,6 @@ npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana
 - Always verify collection membership and re-fetch the asset after a mint.
 - Upload the image before the metadata JSON.
 - Never set `isMutable: false` before metadata is final.
-- Never handle seed phrases; use a keypair file or wallet adapter.
+- Never handle seed phrases. Use a keypair file, `--signer browser`, or a wallet
+  adapter.
+- Never choose `--signer browser` for an unattended run; it needs a human.

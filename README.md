@@ -453,6 +453,34 @@ Or copy `skills/nft-creation/` into your agent's skills directory:
 | Cursor | `~/.cursor/skills/` |
 | Gemini CLI | `~/.gemini/skills/` |
 
+### First run
+
+The skill is instructions, not a daemon. Installing it does not give the agent
+the commands; it needs the toolkit too.
+
+1. Install the skill and restart the agent so it reloads its skill list. Check
+   the install with `npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana -l`,
+   which lists `nft-creation` without installing anything.
+2. Clone the pinned toolkit where the agent can reach it:
+
+   ```bash
+   git clone --branch v2.0.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+   cd Creation-of-NFT-Solana
+   npm ci
+   cp .env.example .env
+   ```
+
+3. Ask for the outcome, not the steps:
+
+   > Create a collection called "Lil Turtles" with symbol LIL and a 5% royalty on
+   > devnet, using assets/lil_turtle_collection.webp. Then mint one item and
+   > confirm it is verified on chain.
+
+The agent reads `SKILL.md`, checks the byte limits, uploads the art and JSON,
+mints, verifies the collection flag and re-fetches the asset before reporting.
+Signatures come from your wallet: a keypair file by default, or Phantom and
+Solflare with `--signer browser`.
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
