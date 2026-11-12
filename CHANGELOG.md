@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.3.2 — 2026-11-12
+
+### Added
+
+- A "What the skill does" section in `SKILL.md` and the README: describe the
+  result in plain language, and the agent creates the collection, uploads to
+  Arweave, mints, verifies, fixes items with missing previews or broken metadata,
+  signs through Phantom, Solflare or Backpack, and works on devnet or mainnet.
+- The same explanation in `llms.txt`.
+
+No code changes.
+
 ## 2.3.1 — 2026-11-12
 
 ### Added

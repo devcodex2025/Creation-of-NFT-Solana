@@ -4,7 +4,7 @@ description: Create a Solana NFT from an empty folder to a verified collection m
 license: MIT
 metadata:
   author: devcodex2025
-  version: "2.3.1"
+  version: "2.3.2"
   homepage: https://github.com/devcodex2025/Creation-of-NFT-Solana
 ---
 
@@ -22,6 +22,21 @@ Scope: this skill owns the decisions that break a launch: art export, metadata
 correctness, upload order, verification, authority, cost, timing. Calling the
 program is the easy part. The order and the checks around it are what keep an
 item verified, inside its collection, and visible on marketplaces months later.
+
+## What this skill does
+
+You describe the result in plain language and the agent does the work:
+
+- creates a collection and mints NFTs into it;
+- uploads art and metadata to Arweave before minting;
+- verifies each item and attaches it to the collection;
+- diagnoses items that show without a preview or with broken metadata, then fixes the metadata or the verification;
+- signs through Phantom, Solflare or Backpack with `--signer browser`;
+- works on devnet and mainnet;
+- handles the manual steps: byte limits, upload order, verification and state.
+
+You do not need to know every instruction or run every command. State the
+outcome and approve the signatures in your wallet.
 
 ## When to use this skill
 
@@ -319,7 +334,7 @@ Read the source before running it. Every command is one file under
 This skill is maintained alongside a working TypeScript toolkit:
 
 ```bash
-git clone --branch v2.3.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.3.2 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -348,7 +363,7 @@ supports devnet, mainnet and a local validator. Install it as a skill from the
 pinned release:
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.1/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.2/skills/solana-nft-creation
 ```
 
 ## References

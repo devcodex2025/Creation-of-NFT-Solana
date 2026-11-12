@@ -22,10 +22,26 @@ mainnet and a local validator.
 It also ships an [agent skill](skills/solana-nft-creation/SKILL.md) so AI coding
 agents can do the whole workflow correctly.
 
+## What the skill does
+
+Describe the result in plain language and the agent does the work:
+
+- creates a collection and mints NFTs into it;
+- uploads the art and metadata to Arweave before minting;
+- verifies each item and attaches it to the right collection;
+- finds why an item shows without a preview or with broken metadata, then fixes the metadata or the verification;
+- signs transactions in Phantom, Solflare or Backpack through the browser bridge;
+- runs on devnet for testing or mainnet with real funds;
+- handles the steps that are usually manual: byte limits, upload order, verification and state.
+
+You do not need to learn every instruction or run each command. Say what you
+want, approve the signatures in your wallet, and the agent reports the addresses
+and Explorer links.
+
 ## Install the skill
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.1/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.2/skills/solana-nft-creation
 ```
 
 Restart the agent so it reloads its skill list.
@@ -33,7 +49,7 @@ Restart the agent so it reloads its skill list.
 The skill drives the toolkit in this repository. Clone it once:
 
 ```bash
-git clone --branch v2.3.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.3.2 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana && npm ci && cp .env.example .env
 ```
 
