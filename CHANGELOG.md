@@ -13,6 +13,9 @@
 - Metadata templates (`metadata/*.example.json`) and validation for Metaplex
   name/symbol/URI limits and royalty ranges.
 - End-to-end test against a local validator (`npm run test:e2e`).
+- `--signer browser`: sign with Phantom, Solflare or Backpack through a
+  temporary page on `127.0.0.1`, so the key never leaves the extension.
+- `npm run test:bridge`: token, Host, CSP and shutdown checks for that bridge.
 - Reusable `nft-creation` agent skill under `skills/nft-creation/`.
 - Documentation: architecture, troubleshooting, launch checklist.
 
@@ -21,6 +24,10 @@
 - Every command now writes/reads `state/<cluster>.json` instead of hardcoded
   collection and NFT addresses.
 - `update` preserves attributes, image and external URL when flags are omitted.
+- Every command accepts `--keypair <path>`; an explicit path that does not exist
+  is an error instead of a silent fallback to another wallet.
+- `createProjectUmi` is async and takes `{ keypairPath, signer }` with
+  `keypair`, `browser` and `readonly` modes.
 - Irys endpoint is selected from the cluster, so devnet never uploads to
   mainnet by mistake.
 

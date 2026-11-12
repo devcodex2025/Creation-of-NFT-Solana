@@ -17,7 +17,7 @@ import {
 import { saveCollection, setWallet } from "../lib/state";
 import { sendAndConfirm } from "../lib/tx";
 import { uploadAsset, uploadMetadata } from "../lib/upload";
-import { createProjectUmi, getStorageBackend } from "../lib/umi";
+import { createProjectUmi, getStorageBackend, resolveSignerMode } from "../lib/umi";
 
 const flags = parseArgs();
 const template = loadMetadataTemplate(getString(flags, "json"));
@@ -41,7 +41,10 @@ const attributes = attributesFile
 
 assertOnChainLimits({ name, symbol });
 
-const umi = createProjectUmi(getString(flags, "keypair"));
+const umi = await createProjectUmi({
+  keypairPath: getString(flags, "keypair"),
+  signer: resolveSignerMode(getString(flags, "signer", process.env.SIGNER)),
+});
 const wallet = umi.identity.publicKey;
 
 console.log(`\n🪙  Creating collection NFT`);

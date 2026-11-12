@@ -14,6 +14,7 @@ src/
 └── lib/
     ├── args.ts          tiny `--flag value` parser
     ├── asset.ts         fetch + summarize a digital asset
+    ├── browser-bridge.ts loopback server + page for Phantom/Solflare signing
     ├── config.ts        cluster, RPC URL, explorer URLs
     ├── keypair.ts       keypair discovery, loading, creation
     ├── metadata.ts      schema, limits, attributes, royalty parsing
@@ -36,7 +37,7 @@ process.env + .env
 config.ts ──► connection (web3.js)
       │
       ▼
-umi.ts ──► Umi + keypairIdentity + mplTokenMetadata + uploader
+umi.ts ──► Umi + keypairIdentity (or browser signer) + mplTokenMetadata + uploader
       │
       ├── create-collection.ts
       │      upload image → upload JSON → createNft(isCollection)

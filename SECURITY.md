@@ -9,6 +9,23 @@
 - Treat the update authority as a production secret. If it leaks, an attacker
   can change your metadata, royalties, and collection membership.
 
+## Local wallet bridge
+
+`--signer browser` is the only mode that opens a listening socket. It exists so a
+key can stay inside Phantom, Solflare or Backpack instead of a file on disk.
+
+- Binds to `127.0.0.1` on an OS-assigned port; never `0.0.0.0`.
+- One 32-byte random token per run, compared in constant time.
+- Rejects any request whose `Host` header is not the loopback origin, so a
+  malicious site cannot reach it through DNS rebinding.
+- The page is served with `default-src 'none'`, `X-Frame-Options: DENY`, and
+  `Cache-Control: no-store`. No external script, style, or font is loaded.
+- One pending request at a time. The server closes when the command ends, on
+  rejection, or after three minutes.
+- The CLI never receives the private key; it receives signatures only.
+
+`npm run test:bridge` asserts these properties without needing a wallet.
+
 ## Mainnet checklist
 
 - Use a dedicated mint wallet, not your personal wallet.
@@ -32,8 +49,9 @@ Please do not disclose a vulnerability publicly before it is fixed.
 - No `postinstall`, `prepare` or other lifecycle scripts. `npm ci` installs
   exactly what `package-lock.json` pins.
 - No remote bootstrap scripts, no `curl | sh`, no downloads at runtime.
-- The toolkit never opens a network connection except to the configured RPC
-  endpoint, the Irys uploader, and the metadata URI it is asked to read.
+- The toolkit never opens an outbound network connection except to the
+  configured RPC endpoint, the Irys uploader, and the metadata URI it is asked to
+  read. The only listening socket is the loopback bridge above.
 - Releases are tagged. The install instructions pin a tag, not `main`.
 
 ## Maintainer

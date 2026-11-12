@@ -8,7 +8,7 @@ import { cluster, explorerAddressUrl, explorerTxUrl, rpcUrl } from "../lib/confi
 import { summarizeAsset } from "../lib/asset";
 import { readState, updateNftRecord } from "../lib/state";
 import { sendAndConfirm } from "../lib/tx";
-import { createProjectUmi } from "../lib/umi";
+import { createProjectUmi, resolveSignerMode } from "../lib/umi";
 
 const flags = parseArgs();
 const state = readState();
@@ -31,7 +31,10 @@ if (!nftAddress) {
   );
 }
 
-const umi = createProjectUmi(getString(flags, "keypair"));
+const umi = await createProjectUmi({
+  keypairPath: getString(flags, "keypair"),
+  signer: resolveSignerMode(getString(flags, "signer", process.env.SIGNER)),
+});
 
 console.log(`\n🔏  Verifying collection membership`);
 console.log(`   Cluster    : ${cluster} (${rpcUrl})`);

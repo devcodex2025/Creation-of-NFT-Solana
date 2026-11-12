@@ -46,6 +46,7 @@ uploads.
 - **Validation** — name (32 bytes), symbol (10), URI (200), royalty (0–10000 bps) checked before sending.
 - **Arweave storage** — Irys uploader with the endpoint chosen from the cluster.
 - **Inspect** — `show` prints on-chain data, collection verification and off-chain JSON.
+- **Browser wallets** — `--signer browser` signs with Phantom, Solflare or Backpack; the key stays in the extension.
 - **Local testing** — `test:e2e` runs the full flow against a local validator with no faucet.
 - **AI agent skill** — a complete `SKILL.md` plus references for professional NFT work.
 
@@ -154,10 +155,16 @@ check the metadata account to see the flag yourself.
 | `npm run update` | Update metadata, image, royalty, authority or immutability |
 | `npm run show` | Print on-chain + off-chain NFT details |
 | `npm run test:e2e` | Full local end-to-end test |
+| `npm run test:bridge` | Security checks for the local wallet bridge |
 | `npm run typecheck` | TypeScript check |
 
 Every command accepts `--help`-style flags documented below, and reads
-configuration from `.env` or the environment.
+configuration from `.env` or the environment. Two flags work on every command:
+
+| Flag | Default | Notes |
+|---|---|---|
+| `--keypair` | `KEYPAIR_PATH` or `./keypair.json` | Keypair file to sign with |
+| `--signer` | `SIGNER` or `keypair` | `keypair`, `browser` (Phantom/Solflare), `readonly` |
 
 ### Passing flags on Windows PowerShell
 
@@ -303,15 +310,15 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the module map.
 | `SOLANA_CLUSTER` | `devnet` | `devnet`, `testnet`, `mainnet-beta`, `localnet` |
 | `RPC_URL` | cluster default | Custom RPC endpoint |
 | `KEYPAIR_PATH` | `./keypair.json` | Keypair JSON path |
+| `SIGNER` | `keypair` | `keypair`, `browser` (Phantom/Solflare), `readonly` |
 | `STORAGE` | `irys` | `irys` (Arweave) or `local` (dev only) |
 | `IRYS_ADDRESS` | per cluster | Override the Irys bundler |
 | `STATE_DIR` | `./state` | Where addresses are stored |
 
 ### Which wallet pays
 
-There is no wallet-connect popup. The CLI signs locally with a keypair file,
-and that same wallet pays rent, transaction fees and storage inside each
-transaction. Resolution order:
+By default the CLI signs locally with a keypair file, and that same wallet pays
+rent, transaction fees and storage inside each transaction. Resolution order:
 
 1. `--keypair <path>` on the command,
 2. `KEYPAIR_PATH` in `.env`,
@@ -336,6 +343,35 @@ Mainnet checklist before switching `SOLANA_CLUSTER=mainnet-beta`:
 - back up the keypair,
 - decide who keeps the update authority,
 - read [the launch checklist](skills/nft-creation/references/launch-checklist.md).
+
+### Signing with Phantom or Solflare
+
+If you would rather keep the key inside a browser extension, pass
+`--signer browser`. The CLI starts a one-page server on `127.0.0.1`, opens it,
+and asks the page to sign:
+
+```bash
+npx esrun src/commands/create-nft.ts --signer browser --name "Lil Turtle #1" --royalty 5
+```
+
+1. The page detects Phantom, Solflare or Backpack through Wallet Standard.
+2. You press **Connect wallet** and pick the account.
+3. Every transaction the CLI needs is shown in the extension for approval.
+4. The signature returns to the CLI; the key never leaves the extension.
+
+One mint needs two or three approvals: the Irys upload messages, the mint
+transaction, and the collection verification transaction. Nothing is signed
+silently, so this mode is for a human at the keyboard — an autonomous agent
+cannot approve for you.
+
+The bridge is loopback only. It listens on `127.0.0.1` with a random port, a
+fresh 32-byte token per run, a `Host` header check, no cross-origin requests, and
+it shuts down when the command finishes or after three minutes.
+`npm run test:bridge` covers those properties.
+
+`--signer readonly` builds a read-only client for commands that never sign
+(`show`). `balance --signer browser` connects, reads the address, and closes the
+bridge without signing anything.
 
 ## Metadata
 

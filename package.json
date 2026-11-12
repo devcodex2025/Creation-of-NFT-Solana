@@ -44,6 +44,7 @@
     "update": "esrun src/commands/update-nft.ts",
     "show": "esrun src/commands/show-nft.ts",
     "test:e2e": "esrun tests/e2e.localnet.ts",
+    "test:bridge": "esrun tests/bridge.security.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -51,6 +52,7 @@
     "@metaplex-foundation/umi": "^1.2.0",
     "@metaplex-foundation/umi-bundle-defaults": "^1.2.0",
     "@metaplex-foundation/umi-uploader-irys": "^1.2.0",
+    "@metaplex-foundation/umi-web3js-adapters": "1.2.0",
     "@solana/web3.js": "^1.98.2",
     "dotenv": "^17.2.1"
   },

@@ -28,7 +28,7 @@ import {
 } from "../lib/state";
 import { sendAndConfirm } from "../lib/tx";
 import { uploadAsset, uploadMetadata } from "../lib/upload";
-import { createProjectUmi } from "../lib/umi";
+import { createProjectUmi, resolveSignerMode } from "../lib/umi";
 import { fetchOffchainMetadata } from "../lib/offchain";
 
 const flags = parseArgs();
@@ -45,7 +45,10 @@ if (!mintAddress) {
   );
 }
 
-const umi = createProjectUmi(getString(flags, "keypair"));
+const umi = await createProjectUmi({
+  keypairPath: getString(flags, "keypair"),
+  signer: resolveSignerMode(getString(flags, "signer", process.env.SIGNER)),
+});
 const asset = await fetchDigitalAsset(umi, umiPublicKey(mintAddress));
 
 if (asset.metadata.updateAuthority !== umi.identity.publicKey) {

@@ -67,7 +67,7 @@ const { createProjectUmi } = await import("../src/lib/umi");
 const { summarizeAsset } = await import("../src/lib/asset");
 const { readState } = await import("../src/lib/state");
 
-const umi = createProjectUmi();
+const umi = await createProjectUmi();
 const balance = await umi.rpc.getBalance(umi.identity.publicKey);
 
 console.log(`\n🧪 E2E on ${cluster} as ${umi.identity.publicKey}`);

@@ -17,6 +17,28 @@ If you already have a keypair elsewhere, point to it:
 KEYPAIR_PATH=/absolute/path/id.json npm run balance
 ```
 
+### `--signer browser` does not connect
+
+The CLI opens a page on `127.0.0.1`; if no tab appears, copy the URL it printed
+into a browser on the same machine. The bridge is loopback only by design, so it
+cannot be opened from another device.
+
+- **"No Solana wallet found"** — install Phantom, Solflare or Backpack, then
+  reload the page. The page detects wallets through Wallet Standard, so a wallet
+  that only injects `window.solana` without features will not appear.
+- **"Wallet connection timed out after 3 minutes"** — the CLI closed the server.
+  Run the command again; every run gets a new port and token.
+- **The tab says "Connection to the CLI lost"** — the command already exited.
+  Check the terminal output.
+- **Nothing happens after Connect** — some wallets require the site to be
+  focused. Click the extension icon and approve there.
+- **A remote/SSH machine** — the bridge binds to `127.0.0.1`, so forward the
+  printed port (`ssh -L <port>:127.0.0.1:<port>`) or use a keypair file instead.
+
+A mint asks for two or three signatures: Irys upload messages, the mint
+transaction, and the collection verification. Rejecting any of them aborts the
+command before it spends SOL on the rest.
+
 ### `410 Gone` when running `npm run fund`
 
 The public devnet RPC faucet is closed. `fund` is only reliable on a local

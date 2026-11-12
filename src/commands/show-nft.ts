@@ -17,7 +17,10 @@ if (!mintAddress) {
   );
 }
 
-const umi = createProjectUmi(getString(flags, "keypair"));
+const umi = await createProjectUmi({
+  keypairPath: getString(flags, "keypair"),
+  signer: "readonly",
+});
 const asset = await summarizeAsset(umi, mintAddress);
 
 console.log(`\n🔎  ${asset.name} [${asset.symbol}]`);

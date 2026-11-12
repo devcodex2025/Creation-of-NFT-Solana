@@ -266,21 +266,39 @@ More: `references/troubleshooting.md`.
 
 ## Safety
 
-- Never ask for or handle a seed phrase. Work with a keypair file or a wallet
-  adapter.
+- Never ask for or handle a seed phrase. Work with a keypair file, a wallet
+  adapter, or the local browser bridge described below.
 - Do not print secret keys. Do not commit `.env` or keypair files.
 - Simulate on devnet before mainnet, with the same metadata and storage.
 - For high-value collections, move the update authority to a multisig before
   announcing the mint.
 
+### Signing with a browser wallet
+
+When the user keeps their key in Phantom, Solflare or Backpack, use
+`--signer browser`. The CLI serves one page on `127.0.0.1`, the page connects
+through Wallet Standard, and each transaction is approved in the extension:
+
+```bash
+npx esrun src/commands/create-nft.ts --signer browser --name "Item #1"
+```
+
+- The key never leaves the extension and never reaches the CLI process.
+- A mint needs two or three approvals (Irys upload messages, mint, verification),
+  so a human must be present. Do not choose this mode for unattended runs.
+- The bridge binds to loopback only, uses a fresh random token per run, checks
+  the `Host` header, refuses cross-origin calls, and closes on completion or
+  after three minutes.
+
 ### What runs on the user's machine
 
-The reference toolkit is local code with no server, no account and no
+The reference toolkit is local code with no remote server, no account and no
 telemetry. Before running it, know exactly what it touches:
 
 | Surface | Behavior |
 |---|---|
 | Keypair | Reads `--keypair`, `KEYPAIR_PATH`, `./keypair.json` or `~/.config/solana/id.json`. Signs locally and pays fees from that account. Never transmits the key and never prints the secret half. |
+| Browser signer | Only with `--signer browser`: a temporary HTTP server on `127.0.0.1` with a random port and one-time token, serving a single page that requests signatures from the wallet extension. No listening socket otherwise. |
 | Network | Solana RPC for transactions and reads, Irys for uploads, plus the metadata URI it fetches to merge fields. Nothing else. |
 | Disk | Writes `state/<cluster>.json`, `uploads/` in local mode, and nothing outside the repo. |
 | Install | No `postinstall`, no `prepare`, no remote bootstrap script. Dependencies are pinned by `package-lock.json`. |
@@ -313,6 +331,10 @@ The same commands exist as `npm run` scripts. On Windows PowerShell 7 with npm
 11, `npm run` drops `--flags` unless you add a second separator
 (`npm run create:nft -- -- --name "..."`), which silently mints with defaults.
 Prefer `npx esrun` when an agent runs the command.
+
+Every command accepts `--keypair <path>` and `--signer keypair|browser|readonly`.
+Use `--signer browser` when the key lives in Phantom or Solflare; use `readonly`
+only for commands that never sign.
 
 The toolkit stores addresses in `state/<cluster>.json`, validates limits, and
 supports devnet, mainnet and a local validator. Install it as a skill from the

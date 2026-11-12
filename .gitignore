@@ -19,3 +19,4 @@ Thumbs.db
 
 # Test scratch
 .tmp/
+esrun-*.tmp.mjs

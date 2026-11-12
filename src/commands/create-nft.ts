@@ -28,7 +28,7 @@ import {
 import { readState, saveNft, setWallet } from "../lib/state";
 import { sendAndConfirm } from "../lib/tx";
 import { uploadAsset, uploadMetadata } from "../lib/upload";
-import { createProjectUmi, getStorageBackend } from "../lib/umi";
+import { createProjectUmi, getStorageBackend, resolveSignerMode } from "../lib/umi";
 
 const flags = parseArgs();
 const template = loadMetadataTemplate(getString(flags, "json"));
@@ -71,7 +71,10 @@ const shouldVerify = !hasFlag(flags, "skip-verify");
 
 assertOnChainLimits({ name, symbol });
 
-const umi = createProjectUmi(getString(flags, "keypair"));
+const umi = await createProjectUmi({
+  keypairPath: getString(flags, "keypair"),
+  signer: resolveSignerMode(getString(flags, "signer", process.env.SIGNER)),
+});
 
 // Preflight: never mint against a collection that does not exist on this
 // cluster (a common failure after switching clusters or resetting a validator).
