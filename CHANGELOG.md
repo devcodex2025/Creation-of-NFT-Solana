@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.1.1 — 2026-11-12
+
+### Fixed
+
+- The browser wallet page only read `window.phantom` and `window.solflare` and
+  required those legacy objects to expose Wallet Standard features, so it could
+  report "No Solana wallet found" with Phantom installed. It now performs
+  Wallet Standard discovery (`wallet-standard:app-ready` and
+  `wallet-standard:register-wallet`) and renders one connect button per
+  discovered wallet.
+- The CLI prints the bridge URL when it opens the page, so the tab can be
+  opened in the browser profile that holds the extension.
+- The account-change handler stops polling instead of signing with a different
+  account than the CLI expects.
+
 ## 2.1.0 — 2026-11-12
 
 ### Changed

@@ -212,6 +212,13 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
 
   openBridge(url);
 
+  if (!process.env.NFT_BRIDGE_URL_FILE) {
+    console.log(`\n🌐  Wallet bridge: ${url}`);
+    console.log(
+      "   If no tab opened, paste that URL into the browser where Phantom or Solflare is installed.",
+    );
+  }
+
   let publicKey: string;
   try {
     publicKey = await connected;
@@ -312,12 +319,12 @@ function renderPage(token: string, defaultChain: string): string {
 <body>
 <main>
   <h1>Approve with your wallet</h1>
-  <p>Connect Phantom or Solflare, then approve each transaction it shows. This page talks to your local CLI only.</p>
-  <div class="row">
-    <button id="connect">Connect wallet</button>
+  <p>Connect Phantom, Solflare or Backpack, then approve each request it shows. This page talks to your local CLI only.</p>
+  <div id="wallets" class="row"></div>
+  <div class="row" style="margin-top:12px">
     <span id="wallet" class="status" style="margin:0;padding:6px 10px">not connected</span>
   </div>
-  <div id="status" class="status">Waiting for a connection.</div>
+  <div id="status" class="status">Looking for a Solana wallet...</div>
   <p style="margin-top:18px">You can close this tab when the CLI finishes.</p>
 </main>
 <script>
@@ -326,34 +333,85 @@ function renderPage(token: string, defaultChain: string): string {
   var defaultChain = ${JSON.stringify(defaultChain)};
   var statusEl = document.getElementById("status");
   var walletEl = document.getElementById("wallet");
-  var connectBtn = document.getElementById("connect");
+  var walletsEl = document.getElementById("wallets");
   var account = null;
   var wallet = null;
   var chain = defaultChain;
-  var running = true;
+  var running = false;
+  var connected = false;
+  var discovered = [];
 
   function setStatus(text, cls) {
     statusEl.textContent = text;
     statusEl.className = "status" + (cls ? " " + cls : "");
   }
 
-  function candidates() {
-    var list = [];
-    var seen = [];
+  function setWallet(text, cls) {
+    walletEl.textContent = text;
+    walletEl.className = "status" + (cls ? " " + cls : "");
+  }
+
+  function addWallet(candidate) {
+    if (!candidate || !candidate.features || !candidate.features["standard:connect"]) return;
+    for (var i = 0; i < discovered.length; i++) {
+      if (discovered[i] === candidate) return;
+      if (candidate.name && discovered[i].name === candidate.name) return;
+    }
+    discovered.push(candidate);
+    render();
+  }
+
+  function registerWallets() {
+    for (var i = 0; i < arguments.length; i++) addWallet(arguments[i]);
+  }
+
+  // Wallet Standard discovery. Wallets that loaded before this page answer the
+  // app-ready event; wallets injected later fire register-wallet. Both paths
+  // end in addWallet, so a wallet never needs a Phantom-specific global.
+  var api = { register: registerWallets };
+  try {
+    window.addEventListener("wallet-standard:register-wallet", function (event) {
+      try { event.detail(api); } catch (error) {}
+    });
+  } catch (error) {}
+  try {
+    window.dispatchEvent(new CustomEvent("wallet-standard:app-ready", { detail: api }));
+  } catch (error) {}
+
+  function render() {
+    walletsEl.textContent = "";
+    for (var i = 0; i < discovered.length; i++) {
+      (function (candidate) {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Connect " + (candidate.name || "wallet");
+        button.addEventListener("click", function () { connect(candidate); });
+        walletsEl.appendChild(button);
+      })(discovered[i]);
+    }
+    if (!connected && discovered.length) setStatus("Select a wallet to connect.");
+  }
+
+  function useLegacyProviders() {
+    if (discovered.length) return;
     var possible = [
       window.phantom && window.phantom.solana,
       window.solflare,
       window.backpack,
       window.solana
     ];
-    for (var i = 0; i < possible.length; i++) {
-      var w = possible[i];
-      if (!w || seen.indexOf(w) !== -1) continue;
-      seen.push(w);
-      if (w.features && w.features["solana:signTransaction"]) list.push(w);
-    }
-    return list;
+    for (var i = 0; i < possible.length; i++) addWallet(possible[i]);
   }
+
+  setTimeout(function () {
+    useLegacyProviders();
+    if (!discovered.length) {
+      setStatus(
+        "No Solana wallet found. Install Phantom, Solflare or Backpack, and open this page in the browser where the extension is installed, then reload.",
+        "err"
+      );
+    }
+  }, 1200);
 
   function b64ToBytes(b64) {
     var raw = atob(b64);
@@ -376,39 +434,62 @@ function renderPage(token: string, defaultChain: string): string {
     });
   }
 
-  async function connect() {
-    connectBtn.disabled = true;
-    var found = candidates();
-    if (!found.length) {
-      setStatus("No Solana wallet found. Install Phantom or Solflare, then reload this page.", "err");
-      connectBtn.disabled = false;
-      return;
-    }
-    wallet = found[0];
+  async function connect(candidate) {
+    if (connected) return;
+    wallet = candidate;
+    setStatus("Connecting to " + (wallet.name || "wallet") + "...");
+    var buttons = walletsEl.querySelectorAll("button");
+    for (var i = 0; i < buttons.length; i++) buttons[i].disabled = true;
     try {
       var connectFeature = wallet.features["standard:connect"];
       var result = await connectFeature.connect();
-      account = result.accounts && result.accounts[0];
+      var accounts = (result && result.accounts) || wallet.accounts || [];
+      account = accounts[0];
       if (!account) throw new Error("Wallet returned no accounts");
-      var supported = account.chains || [];
-      for (var i = 0; i < supported.length; i++) {
-        if (supported[i] === defaultChain) { chain = defaultChain; break; }
-      }
-      if (supported.length && supported.indexOf(chain) === -1) chain = supported[0];
-      walletEl.textContent = account.address;
+      chain = defaultChain;
+      var supported = account.chains || wallet.chains || [];
+      if (supported.length && supported.indexOf(defaultChain) === -1) chain = supported[0];
+      setWallet(account.address, "ok");
       await post("/api/connect", { token: token, publicKey: account.address, chain: chain });
-      setStatus("Connected. Approve the transaction in your wallet.", "ok");
+      connected = true;
+      running = true;
+      setStatus("Connected. Approve each request in your wallet.", "ok");
+      watchAccount();
       poll();
     } catch (error) {
       setStatus(String(error && error.message ? error.message : error), "err");
-      connectBtn.disabled = false;
+      for (var j = 0; j < buttons.length; j++) buttons[j].disabled = false;
     }
   }
 
+  function watchAccount() {
+    var events = wallet.features["standard:events"];
+    if (!events || !events.on) return;
+    events.on("change", function (props) {
+      if (!props || !props.accounts) return;
+      var next = props.accounts[0];
+      if (!next) {
+        running = false;
+        setStatus("Wallet disconnected. Run the CLI command again.", "err");
+        return;
+      }
+      if (account && next.address !== account.address) {
+        running = false;
+        setWallet(next.address);
+        setStatus("Account changed in the wallet. Run the CLI command again so it signs with the right account.", "err");
+        return;
+      }
+      account = next;
+    });
+  }
+
   async function sign(job) {
-    var feature = (account.features && account.features[job.kind === "message" ? "solana:signMessage" : "solana:signTransaction"])
-      || wallet.features[job.kind === "message" ? "solana:signMessage" : "solana:signTransaction"];
-    if (!feature) throw new Error("Wallet does not support " + job.kind);
+    var key = job.kind === "message" ? "solana:signMessage" : "solana:signTransaction";
+    var feature = (account.features && account.features[key])
+      || (wallet.features && wallet.features[key]);
+    if (!feature) {
+      throw new Error("This wallet does not support " + (job.kind === "message" ? "message signing" : "transaction signing"));
+    }
     var bytes = b64ToBytes(job.payload);
     var result;
     if (job.kind === "message") {
@@ -449,7 +530,6 @@ function renderPage(token: string, defaultChain: string): string {
     }
   }
 
-  connectBtn.addEventListener("click", connect);
   window.addEventListener("beforeunload", function () { running = false; });
 })();
 </script>

@@ -23,9 +23,12 @@ The CLI opens a page on `127.0.0.1`; if no tab appears, copy the URL it printed
 into a browser on the same machine. The bridge is loopback only by design, so it
 cannot be opened from another device.
 
-- **"No Solana wallet found"** — install Phantom, Solflare or Backpack, then
-  reload the page. The page detects wallets through Wallet Standard, so a wallet
-  that only injects `window.solana` without features will not appear.
+- **"No Solana wallet found"** — the page detects wallets through Wallet
+  Standard, not by a Phantom-only global. If the extension is installed but the
+  page still says this, check that the tab is open in the same browser profile
+  where the extension lives (the CLI opens the default browser, which may be a
+  different one) and reload. Then click **Connect <wallet name>**; the page lists
+  every wallet it discovered.
 - **"Wallet connection timed out after 3 minutes"** — the CLI closed the server.
   Run the command again; every run gets a new port and token.
 - **The tab says "Connection to the CLI lost"** — the command already exited.

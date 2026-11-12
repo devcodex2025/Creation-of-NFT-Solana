@@ -4,7 +4,7 @@ description: Create a Solana NFT from an empty folder to a verified collection m
 license: MIT
 metadata:
   author: devcodex2025
-  version: "2.1.0"
+  version: "2.1.1"
   homepage: https://github.com/devcodex2025/Creation-of-NFT-Solana
 ---
 
@@ -284,6 +284,10 @@ npx esrun src/commands/create-nft.ts --signer browser --name "Item #1"
 ```
 
 - The key never leaves the extension and never reaches the CLI process.
+- The page discovers wallets through Wallet Standard and lists every one it
+  finds; pick Phantom, Solflare or Backpack, then approve each request. If no
+  wallet appears, open the printed bridge URL in the browser where the extension
+  is installed.
 - A mint needs two or three approvals (Irys upload messages, mint, verification),
   so a human must be present. Do not choose this mode for unattended runs.
 - The bridge binds to loopback only, uses a fresh random token per run, checks
@@ -312,7 +316,7 @@ Read the source before running it. Every command is one file under
 This skill is maintained alongside a working TypeScript toolkit:
 
 ```bash
-git clone --branch v2.1.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.1.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -341,7 +345,7 @@ supports devnet, mainnet and a local validator. Install it as a skill from the
 pinned release:
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.1.0/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.1.1/skills/solana-nft-creation
 ```
 
 ## References

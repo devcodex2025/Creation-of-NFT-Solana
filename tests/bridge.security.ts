@@ -31,6 +31,18 @@ function check(name: string, condition: boolean, detail = ""): void {
   }
 }
 
+function inlineScriptParses(html: string): boolean {
+  const match = html.match(/<script>([\s\S]*?)<\/script>/);
+  if (!match) return false;
+  try {
+    // Compile only: catches syntax errors in the page without running it.
+    new Function(match[1]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function send(
   target: string,
   options: {
@@ -118,7 +130,16 @@ try {
   check("page sets a Content-Security-Policy", csp.includes("default-src 'none'"), csp);
   check("page sets X-Frame-Options", page.headers["x-frame-options"] === "DENY");
   check("page is not cacheable", page.headers["cache-control"] === "no-store");
-  check("page offers a connect button", page.body.includes("Connect wallet"));
+  check(
+    "page uses Wallet Standard discovery",
+    page.body.includes("wallet-standard:app-ready") &&
+      page.body.includes("wallet-standard:register-wallet"),
+  );
+  check(
+    "page names Phantom, Solflare and Backpack",
+    page.body.includes("Phantom, Solflare or Backpack"),
+  );
+  check("page scripts parse", inlineScriptParses(page.body));
   check("page never embeds the keypair path", !page.body.includes("keypair.json"));
 
   const wrongTokenConnect = await send(`${origin}/api/connect`, {

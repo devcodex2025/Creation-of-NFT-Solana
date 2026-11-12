@@ -60,7 +60,7 @@ uploads.
 ### 2. Install
 
 ```bash
-git clone --branch v2.1.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
+git clone --branch v2.1.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -355,9 +355,13 @@ npx esrun src/commands/create-nft.ts --signer browser --name "Lil Turtle #1" --r
 ```
 
 1. The page detects Phantom, Solflare or Backpack through Wallet Standard.
-2. You press **Connect wallet** and pick the account.
+2. You press **Connect <wallet name>** and pick the account.
 3. Every transaction the CLI needs is shown in the extension for approval.
 4. The signature returns to the CLI; the key never leaves the extension.
+
+If the tab does not open, the CLI prints the bridge URL; paste it into the
+browser where the extension is installed. The page is loopback-only, so it has
+to stay on this machine.
 
 One mint needs two or three approvals: the Irys upload messages, the mint
 transaction, and the collection verification transaction. Nothing is signed
@@ -440,7 +444,7 @@ verifying collections, royalties, launch checks and error handling.
 Install with the [skills CLI](https://www.skills.sh/):
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.1.0/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.1.1/skills/solana-nft-creation
 ```
 
 Or copy `skills/solana-nft-creation/` into your agent's skills directory:
@@ -464,7 +468,7 @@ the commands; it needs the toolkit too.
 2. Clone the pinned toolkit where the agent can reach it:
 
    ```bash
-   git clone --branch v2.1.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+   git clone --branch v2.1.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
    cd Creation-of-NFT-Solana
    npm ci
    cp .env.example .env
