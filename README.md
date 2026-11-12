@@ -22,6 +22,52 @@ mainnet and a local validator.
 It also ships an [agent skill](skills/solana-nft-creation/SKILL.md) so AI coding
 agents can do the whole workflow correctly.
 
+## Install the skill
+
+```bash
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.1/skills/solana-nft-creation
+```
+
+Restart the agent so it reloads its skill list.
+
+The skill drives the toolkit in this repository. Clone it once:
+
+```bash
+git clone --branch v2.3.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+cd Creation-of-NFT-Solana && npm ci && cp .env.example .env
+```
+
+Ask your agent for the result, not the steps:
+
+> Create a collection called "Lil Turtles" with symbol LIL and a 5% royalty on
+> devnet, using assets/lil_turtle_collection.webp. Then mint one item and confirm
+> it is verified on chain.
+
+More things to ask for:
+
+- `Mint another item into the Lil Turtles collection.`
+- `The item shows outside the collection. Verify it.`
+- `Set the royalty to 7.5% and keep the traits.`
+
+The agent reads `SKILL.md`, checks the limits before spending SOL and verifies
+the result on chain. Signatures stay in your wallet: a keypair file by default,
+Phantom or Solflare with `--signer browser`.
+
+<details>
+<summary>Using another agent?</summary>
+
+Copy `skills/solana-nft-creation/` into its skills directory:
+
+| Agent | Directory |
+|---|---|
+| OpenCode | `~/.config/opencode/skills/` |
+| Claude Code | `~/.claude/skills/` |
+| Codex / ChatGPT desktop | `~/.agents/skills/` |
+| Cursor | `~/.cursor/skills/` |
+| Gemini CLI | `~/.gemini/skills/` |
+
+</details>
+
 ---
 
 ## Why this exists
@@ -59,12 +105,7 @@ uploads.
 
 ### 2. Install
 
-```bash
-git clone --branch v2.3.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
-cd Creation-of-NFT-Solana
-npm ci
-cp .env.example .env
-```
+See [Install the skill](#install-the-skill). The same clone runs the CLI.
 
 ### 3. Create and fund a wallet
 
@@ -439,55 +480,21 @@ an unverified mint, and asserts the validation guardrails. If the validator
 does not have Token Metadata cloned you will see
 `Attempt to load a program that does not exist`.
 
-## AI agent skill
+## What the skill covers
 
-[`skills/solana-nft-creation`](skills/solana-nft-creation/SKILL.md) teaches an agent the whole
-workflow: choosing a token standard, writing metadata, uploading to Arweave,
-verifying collections, royalties, launch checks and error handling.
+The skill is the part that makes an agent behave like someone who has launched a
+collection before: token standard choice, metadata within the byte limits,
+Arweave storage, verification, royalties, updates, authority handoff, launch
+checks and error handling.
 
-Install with the [skills CLI](https://www.skills.sh/):
+- [SKILL.md](skills/solana-nft-creation/SKILL.md)
+- [Metadata standard](skills/solana-nft-creation/references/metadata-standard.md)
+- [Collection verification](skills/solana-nft-creation/references/collections.md)
+- [Storage](skills/solana-nft-creation/references/storage.md)
+- [Launch checklist](skills/solana-nft-creation/references/launch-checklist.md)
+- [Troubleshooting](skills/solana-nft-creation/references/troubleshooting.md)
 
-```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.1/skills/solana-nft-creation
-```
-
-Or copy `skills/solana-nft-creation/` into your agent's skills directory:
-
-| Agent | Personal directory |
-|---|---|
-| OpenCode | `~/.config/opencode/skills/` |
-| Claude Code | `~/.claude/skills/` |
-| Codex / ChatGPT desktop | `~/.agents/skills/` |
-| Cursor | `~/.cursor/skills/` |
-| Gemini CLI | `~/.gemini/skills/` |
-
-### First run
-
-The skill is instructions, not a daemon. Installing it does not give the agent
-the commands; it needs the toolkit too.
-
-1. Install the skill and restart the agent so it reloads its skill list. Check
-   the install with `npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana -l`,
-   which lists `solana-nft-creation` without installing anything.
-2. Clone the pinned toolkit where the agent can reach it:
-
-   ```bash
-   git clone --branch v2.3.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
-   cd Creation-of-NFT-Solana
-   npm ci
-   cp .env.example .env
-   ```
-
-3. Ask for the outcome, not the steps:
-
-   > Create a collection called "Lil Turtles" with symbol LIL and a 5% royalty on
-   > devnet, using assets/lil_turtle_collection.webp. Then mint one item and
-   > confirm it is verified on chain.
-
-The agent reads `SKILL.md`, checks the byte limits, uploads the art and JSON,
-mints, verifies the collection flag and re-fetches the asset before reporting.
-Signatures come from your wallet: a keypair file by default, or Phantom and
-Solflare with `--signer browser`.
+Install it at the [top of this README](#install-the-skill).
 
 ## Troubleshooting
 

@@ -55,9 +55,12 @@ Verify discovery without installing:
 npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana -l
 ```
 
-The skill drives the CLI above; clone the pinned toolkit first. See the
-"First run" section of the README for the three-step setup and an example
-prompt.
+The skill drives the CLI above; clone the pinned toolkit first. Example prompt:
+
+> Create a collection called "Lil Turtles" with symbol LIL and a 5% royalty on
+> devnet, then mint one item and confirm it is verified on chain.
+
+See "Install the skill" at the top of the README.
 
 ## Docs
 
