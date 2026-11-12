@@ -40,9 +40,10 @@ cannot be opened from another device.
 
 An item mint asks for four signatures: two Arweave upload messages, the mint
 transaction and the collection verification. Creating the collection first adds
-three: two uploads and the collection mint. The page names each request, so you
-can see which step you are approving. Rejecting any of them aborts the command
-before it spends SOL on the rest.
+three: two uploads and the collection mint. When Irys needs a top-up it adds one
+storage payment transaction. The page names each request, so you can see which
+step you are approving. Rejecting any of them aborts the command before it
+spends SOL on the rest.
 
 ### `410 Gone` when running `npm run fund`
 

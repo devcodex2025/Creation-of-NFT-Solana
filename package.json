@@ -1,6 +1,6 @@
 {
   "name": "creation-of-nft-solana",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Create, verify, update and inspect professional Solana NFTs with Metaplex Token Metadata, Umi and Arweave (Irys) storage. Includes a reusable AI agent skill for NFT creation.",
   "keywords": [
     "solana",
@@ -45,6 +45,7 @@
     "show": "esrun src/commands/show-nft.ts",
     "test:e2e": "esrun tests/e2e.localnet.ts",
     "test:bridge": "esrun tests/bridge.security.ts",
+    "test:labels": "esrun tests/labels.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

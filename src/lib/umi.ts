@@ -84,10 +84,11 @@ function createLocalUploader(): UploaderInterface {
 }
 
 const METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
+const SYSTEM_PROGRAM_ID = "11111111111111111111111111111111";
 
-type BrowserAction = "collection" | "nft" | "update" | "verify" | "transaction";
+export type BrowserAction = "collection" | "nft" | "update" | "verify" | "transaction";
 
-function describeTransaction(
+export function describeTransaction(
   transaction: UmiTransaction,
   action: BrowserAction,
 ): RequestContext {
@@ -113,6 +114,17 @@ function describeTransaction(
           };
     }
   }
+  for (const instruction of transaction.message.instructions) {
+    const programId = transaction.message.accounts[instruction.programIndex];
+    if (programId !== SYSTEM_PROGRAM_ID) continue;
+    const data = instruction.data;
+    if (data[0] === 2 && data[1] === 0 && data[2] === 0 && data[3] === 0) {
+      return {
+        label: "Approve storage payment",
+        detail: "Pays Irys for the Arweave upload.",
+      };
+    }
+  }
   if (action === "update") {
     return {
       label: "Approve metadata update",
@@ -124,7 +136,6 @@ function describeTransaction(
     detail: "Signs a Solana transaction built by the CLI.",
   };
 }
-
 /**
  * Signs through the browser bridge. Umi passes the transaction, the wallet
  * signs the serialized bytes, and the signed transaction comes back with all

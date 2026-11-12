@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.3.1 — 2026-11-12
+
+### Added
+
+- The Irys funding transaction is named "Approve storage payment" instead of
+  "Approve transaction". It appears on the first upload when the Irys balance
+  needs a top-up, which is why a first run can ask for one more approval.
+- `npm run test:labels` pins the instruction-to-label mapping: collection create,
+  NFT mint, collection verification, storage payment, metadata update, unknown
+  transaction, and the case where a mint transaction also carries a system
+  instruction.
+
+### Changed
+
+- Docs explain the storage payment and the real approval counts: four for an
+  item mint, three for the collection, plus one when Irys needs funding.
+
 ## 2.3.0 — 2026-11-12
 
 ### Added
@@ -12,12 +29,14 @@
 - Request counter ("Request 2") and a final message with the number of signed
   requests.
 - The CLI derives the name from the Token Metadata instruction and the command
-  action, so the page does not guess.
+  action, so the page does not guess. An Irys funding transaction is named
+  "Approve storage payment" instead of a generic transaction.
 
 ### Changed
 
 - Docs now state the real number of approvals: four for an item mint (two
-  uploads, mint, verification) and three for the collection.
+  uploads, mint, verification) and three for the collection, plus one storage
+  payment when Irys needs a top-up.
 
 ## 2.2.0 — 2026-11-12
 
