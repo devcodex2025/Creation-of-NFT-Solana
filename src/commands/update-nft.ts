@@ -21,7 +21,11 @@ import {
   parseRoyaltyBps,
   readJsonFile,
 } from "../lib/metadata";
-import { readState, updateNftRecord } from "../lib/state";
+import {
+  readState,
+  updateCollectionRecord,
+  updateNftRecord,
+} from "../lib/state";
 import { sendAndConfirm } from "../lib/tx";
 import { uploadAsset, uploadMetadata } from "../lib/upload";
 import { createProjectUmi } from "../lib/umi";
@@ -144,6 +148,12 @@ updateNftRecord(mintAddress, {
   name: updated.metadata.name,
   uri: updated.metadata.uri,
 });
+if (readState().collection?.address === mintAddress) {
+  updateCollectionRecord({
+    name: updated.metadata.name,
+    uri: updated.metadata.uri,
+  });
+}
 
 console.log(`\n✅ NFT updated`);
 console.log(`   Name      : ${updated.metadata.name}`);

@@ -84,6 +84,19 @@ export function updateNftRecord(
   writeState(state);
 }
 
+/**
+ * The collection is an NFT too, so updating it should not leave a stale name
+ * and URI in state while the chain holds the new ones.
+ */
+export function updateCollectionRecord(
+  patch: Partial<CollectionRecord>,
+): void {
+  const state = readState();
+  if (!state.collection) return;
+  Object.assign(state.collection, patch);
+  writeState(state);
+}
+
 export function setWallet(address: string): void {
   const state = readState();
   state.wallet = address;
