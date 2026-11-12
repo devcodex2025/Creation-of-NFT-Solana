@@ -89,6 +89,10 @@ npm run create:collection -- \
 The command uploads the image and metadata, mints the collection NFT, confirms
 it on-chain and writes the address to `state/devnet.json`.
 
+On Windows PowerShell, `npm run` drops the flags unless you add a second `--`.
+Use the `npx esrun` form shown in [Passing flags on Windows
+PowerShell](#passing-flags-on-windows-powershell).
+
 ### 5. Mint an NFT into it
 
 ```bash
@@ -123,6 +127,20 @@ npm run show
 
 That is the whole loop. Everything else is optional.
 
+## Live example on devnet
+
+Minted with this toolkit, metadata and art on Arweave:
+
+| What | Address |
+|---|---|
+| Collection | [`4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX`](https://explorer.solana.com/address/4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX?cluster=devnet) |
+| Item | [`28yf57a5AcSxoh3GcAa6hW6D3Jf8M6TVWze9TSUF4Tzv`](https://explorer.solana.com/address/28yf57a5AcSxoh3GcAa6hW6D3Jf8M6TVWze9TSUF4Tzv?cluster=devnet) |
+| Metadata JSON | [gateway.irys.xyz](https://gateway.irys.xyz/6jjpGPrHo2XJyp9pkNym1tVve7uBTcdMJtUBkipGnmJH) |
+
+The item carries `collection.verified = true` on chain, which is what puts it
+inside the collection in wallets and marketplaces. Open the item in Explorer and
+check the metadata account to see the flag yourself.
+
 ## Commands
 
 | Command | What it does |
@@ -140,6 +158,26 @@ That is the whole loop. Everything else is optional.
 
 Every command accepts `--help`-style flags documented below, and reads
 configuration from `.env` or the environment.
+
+### Passing flags on Windows PowerShell
+
+Windows PowerShell 7 with npm 11 eats the first `--` and treats `--flag` as npm
+config, so `npm run create:nft -- --name "X"` reaches the script with no flags
+and mints with defaults. Three ways around it, any of them correct:
+
+```bash
+# 1. Direct call, works in every shell
+npx esrun src/commands/create-nft.ts --name "Lil Turtle #1" --royalty 5
+
+# 2. Double separator under PowerShell
+npm run create:nft -- -- --name "Lil Turtle #1" --royalty 5
+
+# 3. cmd.exe or Git Bash
+npm run create:nft -- --name "Lil Turtle #1" --royalty 5
+```
+
+The toolkit prints a warning when it receives no flags at all, so a silent
+default mint is hard to miss.
 
 ### `create:collection`
 

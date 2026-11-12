@@ -132,12 +132,17 @@ the collection address that items reference.
 With the reference toolkit:
 
 ```bash
-npm run create:collection -- \
+npx esrun src/commands/create-collection.ts \
   --name "Lil Turtle Collection" \
   --symbol LIL \
   --image assets/lil_turtle_collection.webp \
   --royalty 2.5
 ```
+
+Call the script directly rather than through `npm run`. Windows PowerShell 7
+with npm 11 strips `--flags` from `npm run`, so the command runs with defaults
+and mints a different collection than the one you described. `npx esrun` passes
+flags through in every shell.
 
 Raw Umi equivalent:
 
@@ -282,11 +287,16 @@ npm run keypair
 
 | Command | Purpose |
 |---|---|
-| `npm run create:collection` | Create the collection NFT |
-| `npm run create:nft` | Mint and verify an item |
-| `npm run verify` | Verify an existing item |
-| `npm run update` | Update metadata, royalty, authority |
-| `npm run show` | Inspect on-chain and off-chain data |
+| `npx esrun src/commands/create-collection.ts` | Create the collection NFT |
+| `npx esrun src/commands/create-nft.ts` | Mint and verify an item |
+| `npx esrun src/commands/verify-collection.ts` | Verify an existing item |
+| `npx esrun src/commands/update-nft.ts` | Update metadata, royalty, authority |
+| `npx esrun src/commands/show-nft.ts` | Inspect on-chain and off-chain data |
+
+The same commands exist as `npm run` scripts. On Windows PowerShell 7 with npm
+11, `npm run` drops `--flags` unless you add a second separator
+(`npm run create:nft -- -- --name "..."`), which silently mints with defaults.
+Prefer `npx esrun` when an agent runs the command.
 
 The toolkit stores addresses in `state/<cluster>.json`, validates limits, and
 supports devnet, mainnet and a local validator. Install it as a skill with

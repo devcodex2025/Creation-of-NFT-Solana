@@ -30,7 +30,31 @@ export function parseArgs(argv: string[] = process.argv.slice(2)): Flags {
     flags[key] = true;
   }
 
+  warnIfFlagsWereSwallowed(flags, argv);
   return flags;
+}
+
+/**
+ * Windows PowerShell 7 with npm 11 eats the first `--` and treats `--flag` as
+ * npm config, so `npm run create:nft -- --name X` reaches the script with no
+ * flags at all and silently falls back to defaults. Say so instead of minting
+ * something the caller did not ask for.
+ */
+function warnIfFlagsWereSwallowed(flags: Flags, argv: string[]): void {
+  if (Object.keys(flags).length > 0) return;
+  if (argv.length === 0) return;
+  if (!process.env.npm_lifecycle_event) return;
+
+  console.warn(
+    [
+      "",
+      "⚠️  No --flags reached this script, so defaults are in use.",
+      "   Windows PowerShell 7 + npm 11 strips --flags from `npm run`.",
+      "   Add an extra separator:  npm run <script> -- -- --name \"...\"",
+      "   Or call the script directly:  npx esrun src/commands/<file>.ts --name \"...\"",
+      "",
+    ].join("\n"),
+  );
 }
 
 export function getString(

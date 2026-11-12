@@ -100,6 +100,18 @@ npm run update -- --mint <address> --immutable
 
 This is permanent. There is no way to reverse it.
 
+### Flags are ignored and defaults are used
+
+Windows PowerShell 7 with npm 11 drops `--flags` passed through `npm run`. Add a
+second separator or call the script directly:
+
+```bash
+npm run update -- -- --mint <address> --immutable
+npx esrun src/commands/update-nft.ts --mint <address> --immutable
+```
+
+The toolkit warns when it receives no flags at all.
+
 ## Storage
 
 ### Irys upload is slow or fails

@@ -89,6 +89,20 @@ const verified =
   asset.metadata.collection.value.verified;
 ```
 
+A real devnet example minted with this toolkit, decoded straight from the
+metadata account:
+
+```text
+mint              28yf57a5AcSxoh3GcAa6hW6D3Jf8M6TVWze9TSUF4Tzv
+collection        4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX
+collection.verified  true
+sellerFeeBasisPoints 750
+uri               https://gateway.irys.xyz/6jjpGPrHo2XJyp9pkNym1tVve7uBTcdMJtUBkipGnmJH
+```
+
+Check it in Explorer:
+<https://explorer.solana.com/address/28yf57a5AcSxoh3GcAa6hW6D3Jf8M6TVWze9TSUF4Tzv?cluster=devnet>
+
 ## Authority model
 
 | Role | Can do |
