@@ -17,7 +17,7 @@ if (!mintAddress) {
   );
 }
 
-const umi = createProjectUmi();
+const umi = createProjectUmi(getString(flags, "keypair"));
 const asset = await summarizeAsset(umi, mintAddress);
 
 console.log(`\n🔎  ${asset.name} [${asset.symbol}]`);

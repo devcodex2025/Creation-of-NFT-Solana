@@ -27,16 +27,25 @@ export const solanaCliKeypairPath = path.join(
 );
 
 export function resolveKeypairPath(explicit?: string): string {
-  const candidates = [
-    explicit,
-    process.env.KEYPAIR_PATH,
-    defaultKeypairPath,
-    solanaCliKeypairPath,
-  ].filter((candidate): candidate is string => Boolean(candidate));
+  // An explicitly requested wallet must exist. Falling back to a different
+  // keypair here would silently pay fees from the wrong account.
+  const requested = explicit ?? process.env.KEYPAIR_PATH;
+  if (requested) {
+    const resolved = path.resolve(requested);
+    if (existsSync(resolved)) return resolved;
+    throw new Error(
+      [
+        `Keypair not found at ${resolved}.`,
+        "Check --keypair or KEYPAIR_PATH.",
+        "Refusing to fall back to another wallet, because that would pay from a different account.",
+      ].join("\n"),
+    );
+  }
+
+  const candidates = [defaultKeypairPath, solanaCliKeypairPath];
 
   for (const candidate of candidates) {
-    const resolved = path.resolve(candidate);
-    if (existsSync(resolved)) return resolved;
+    if (existsSync(candidate)) return candidate;
   }
 
   throw new Error(

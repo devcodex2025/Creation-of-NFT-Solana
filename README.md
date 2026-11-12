@@ -307,6 +307,28 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the module map.
 | `IRYS_ADDRESS` | per cluster | Override the Irys bundler |
 | `STATE_DIR` | `./state` | Where addresses are stored |
 
+### Which wallet pays
+
+There is no wallet-connect popup. The CLI signs locally with a keypair file,
+and that same wallet pays rent, transaction fees and storage inside each
+transaction. Resolution order:
+
+1. `--keypair <path>` on the command,
+2. `KEYPAIR_PATH` in `.env`,
+3. `./keypair.json`,
+4. `~/.config/solana/id.json` (the Solana CLI default).
+
+An explicit `--keypair` or `KEYPAIR_PATH` that does not exist is an error. The
+toolkit refuses to fall back to another wallet, so fees never come from an
+account you did not choose.
+
+```bash
+npx esrun src/commands/create-nft.ts --keypair ./wallets/mint.json --name "Lil Turtle #1"
+```
+
+Use a dedicated mint wallet holding only what the launch needs. A keypair file
+gives full control of the account to anyone who reads it.
+
 Mainnet checklist before switching `SOLANA_CLUSTER=mainnet-beta`:
 
 - fund the wallet with real SOL,

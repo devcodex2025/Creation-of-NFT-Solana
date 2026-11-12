@@ -41,7 +41,7 @@ const attributes = attributesFile
 
 assertOnChainLimits({ name, symbol });
 
-const umi = createProjectUmi();
+const umi = createProjectUmi(getString(flags, "keypair"));
 const wallet = umi.identity.publicKey;
 
 console.log(`\n🪙  Creating collection NFT`);

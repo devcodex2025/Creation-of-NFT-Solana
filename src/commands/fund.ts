@@ -1,5 +1,5 @@
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
-import { getNumber, parseArgs } from "../lib/args";
+import { getNumber, getString, parseArgs } from "../lib/args";
 import { cluster, connection, rpcUrl } from "../lib/config";
 import { loadKeypair } from "../lib/keypair";
 
@@ -10,7 +10,7 @@ if (cluster === "mainnet-beta") {
   throw new Error("Refusing to airdrop on mainnet-beta. Use real SOL.");
 }
 
-const keypair = loadKeypair();
+const keypair = loadKeypair(getString(flags, "keypair"));
 
 console.log(`\n🚰  Requesting ${amount} SOL on ${cluster}`);
 console.log(`   Wallet : ${keypair.publicKey}`);

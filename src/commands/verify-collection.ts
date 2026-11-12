@@ -31,7 +31,7 @@ if (!nftAddress) {
   );
 }
 
-const umi = createProjectUmi();
+const umi = createProjectUmi(getString(flags, "keypair"));
 
 console.log(`\n🔏  Verifying collection membership`);
 console.log(`   Cluster    : ${cluster} (${rpcUrl})`);

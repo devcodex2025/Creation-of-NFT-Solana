@@ -45,7 +45,7 @@ if (!mintAddress) {
   );
 }
 
-const umi = createProjectUmi();
+const umi = createProjectUmi(getString(flags, "keypair"));
 const asset = await fetchDigitalAsset(umi, umiPublicKey(mintAddress));
 
 if (asset.metadata.updateAuthority !== umi.identity.publicKey) {

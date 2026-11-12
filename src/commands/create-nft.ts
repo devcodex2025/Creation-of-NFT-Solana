@@ -71,7 +71,7 @@ const shouldVerify = !hasFlag(flags, "skip-verify");
 
 assertOnChainLimits({ name, symbol });
 
-const umi = createProjectUmi();
+const umi = createProjectUmi(getString(flags, "keypair"));
 
 // Preflight: never mint against a collection that does not exist on this
 // cluster (a common failure after switching clusters or resetting a validator).

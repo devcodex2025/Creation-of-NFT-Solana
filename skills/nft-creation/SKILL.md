@@ -280,7 +280,7 @@ telemetry. Before running it, know exactly what it touches:
 
 | Surface | Behavior |
 |---|---|
-| Keypair | Reads `KEYPAIR_PATH`, `./keypair.json` or `~/.config/solana/id.json`. Never transmits it and never prints the secret half. |
+| Keypair | Reads `--keypair`, `KEYPAIR_PATH`, `./keypair.json` or `~/.config/solana/id.json`. Signs locally and pays fees from that account. Never transmits the key and never prints the secret half. |
 | Network | Solana RPC for transactions and reads, Irys for uploads, plus the metadata URI it fetches to merge fields. Nothing else. |
 | Disk | Writes `state/<cluster>.json`, `uploads/` in local mode, and nothing outside the repo. |
 | Install | No `postinstall`, no `prepare`, no remote bootstrap script. Dependencies are pinned by `package-lock.json`. |

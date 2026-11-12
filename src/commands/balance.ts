@@ -9,7 +9,7 @@ const explicitAddress = getString(flags, "address");
 
 let address = explicitAddress;
 if (!address) {
-  const keypair = loadKeypair();
+  const keypair = loadKeypair(getString(flags, "keypair"));
   address = keypair.publicKey.toBase58();
   setWallet(address);
 }
