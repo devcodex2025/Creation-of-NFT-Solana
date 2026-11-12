@@ -273,14 +273,30 @@ More: `references/troubleshooting.md`.
 - For high-value collections, move the update authority to a multisig before
   announcing the mint.
 
+### What runs on the user's machine
+
+The reference toolkit is local code with no server, no account and no
+telemetry. Before running it, know exactly what it touches:
+
+| Surface | Behavior |
+|---|---|
+| Keypair | Reads `KEYPAIR_PATH`, `./keypair.json` or `~/.config/solana/id.json`. Never transmits it and never prints the secret half. |
+| Network | Solana RPC for transactions and reads, Irys for uploads, plus the metadata URI it fetches to merge fields. Nothing else. |
+| Disk | Writes `state/<cluster>.json`, `uploads/` in local mode, and nothing outside the repo. |
+| Install | No `postinstall`, no `prepare`, no remote bootstrap script. Dependencies are pinned by `package-lock.json`. |
+| Defaults | `SOLANA_CLUSTER=devnet`. Mainnet requires setting it explicitly. |
+
+Read the source before running it. Every command is one file under
+`src/commands/`, and the shared logic is under `src/lib/`.
+
 ## Reference implementation
 
 This skill is maintained alongside a working TypeScript toolkit:
 
 ```bash
-git clone https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.0.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
-npm install
+npm ci
 cp .env.example .env
 npm run keypair
 ```
@@ -299,8 +315,12 @@ The same commands exist as `npm run` scripts. On Windows PowerShell 7 with npm
 Prefer `npx esrun` when an agent runs the command.
 
 The toolkit stores addresses in `state/<cluster>.json`, validates limits, and
-supports devnet, mainnet and a local validator. Install it as a skill with
-`npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana`.
+supports devnet, mainnet and a local validator. Install it as a skill from the
+pinned release:
+
+```bash
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.0.0/skills/nft-creation
+```
 
 ## References
 

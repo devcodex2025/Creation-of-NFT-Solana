@@ -1,0 +1,9 @@
+# Default reviewers for release-critical paths.
+
+* @devcodex2025
+
+# Skill content is reviewed like code: it is what agents execute.
+/skills/ @devcodex2025
+/src/ @devcodex2025
+/package.json @devcodex2025
+/package-lock.json @devcodex2025

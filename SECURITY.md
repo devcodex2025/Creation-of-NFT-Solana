@@ -26,3 +26,17 @@ Open a private security advisory on GitHub:
 https://github.com/devcodex2025/Creation-of-NFT-Solana/security/advisories
 
 Please do not disclose a vulnerability publicly before it is fixed.
+
+## Supply chain
+
+- No `postinstall`, `prepare` or other lifecycle scripts. `npm ci` installs
+  exactly what `package-lock.json` pins.
+- No remote bootstrap scripts, no `curl | sh`, no downloads at runtime.
+- The toolkit never opens a network connection except to the configured RPC
+  endpoint, the Irys uploader, and the metadata URI it is asked to read.
+- Releases are tagged. The install instructions pin a tag, not `main`.
+
+## Maintainer
+
+Maintained by `@devcodex2025`. Security reports go to the advisory link above,
+or by email to karbivskij@gmail.com for anything that cannot be filed publicly.

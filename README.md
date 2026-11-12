@@ -59,9 +59,9 @@ uploads.
 ### 2. Install
 
 ```bash
-git clone https://github.com/devcodex2025/Creation-of-NFT-Solana.git
+git clone --branch v2.0.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
 cd Creation-of-NFT-Solana
-npm install
+npm ci
 cp .env.example .env
 ```
 
@@ -382,7 +382,7 @@ verifying collections, royalties, launch checks and error handling.
 Install with the [skills CLI](https://www.skills.sh/):
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.0.0/skills/nft-creation
 ```
 
 Or copy `skills/nft-creation/` into your agent's skills directory:
