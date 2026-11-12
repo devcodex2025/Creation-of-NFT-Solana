@@ -15,10 +15,15 @@ import { cluster } from "./config";
  * single pending request, three minute timeout, server closed when done.
  */
 
+export interface RequestContext {
+  label?: string;
+  detail?: string;
+}
+
 export interface BrowserWallet {
   publicKey: string;
-  signTransaction(bytes: Uint8Array): Promise<Uint8Array>;
-  signMessage(bytes: Uint8Array): Promise<Uint8Array>;
+  signTransaction(bytes: Uint8Array, context?: RequestContext): Promise<Uint8Array>;
+  signMessage(bytes: Uint8Array, context?: RequestContext): Promise<Uint8Array>;
   close(): Promise<void>;
 }
 
@@ -26,6 +31,8 @@ interface PendingRequest {
   id: string;
   kind: "transaction" | "message";
   payload: string;
+  label: string;
+  detail: string;
   resolve: (bytes: Uint8Array) => void;
   reject: (error: Error) => void;
 }
@@ -154,6 +161,8 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
         id: pending.id,
         kind: pending.kind,
         payload: pending.payload,
+        label: pending.label,
+        detail: pending.detail,
       });
       return;
     }
@@ -210,6 +219,7 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
   function request(
     kind: PendingRequest["kind"],
     payload: Uint8Array,
+    context?: RequestContext,
   ): Promise<Uint8Array> {
     const job = queue.then(
       () =>
@@ -219,6 +229,10 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
             id,
             kind,
             payload: Buffer.from(payload).toString("base64"),
+            label:
+              context?.label ??
+              (kind === "message" ? "Approve signature" : "Approve transaction"),
+            detail: context?.detail ?? "",
             resolve,
             reject,
           };
@@ -247,8 +261,8 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
 
   return {
     publicKey,
-    signTransaction: (bytes) => request("transaction", bytes),
-    signMessage: (bytes) => request("message", bytes),
+    signTransaction: (bytes, context) => request("transaction", bytes, context),
+    signMessage: (bytes, context) => request("message", bytes, context),
     close: finish,
   };
 }
@@ -309,7 +323,13 @@ async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> 
 
 function renderPage(token: string, defaultChain: string): string {
   const cluster = defaultChain.replace("solana:", "");
-  const chainLabel = cluster.charAt(0).toUpperCase() + cluster.slice(1);
+  const networkKey = ["devnet", "testnet", "mainnet", "localnet"].includes(cluster)
+    ? cluster
+    : "localnet";
+  const networkLabel =
+    cluster === "mainnet"
+      ? "Mainnet, real funds"
+      : cluster.charAt(0).toUpperCase() + cluster.slice(1);
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -330,6 +350,18 @@ function renderPage(token: string, defaultChain: string): string {
     --accent-contrast: #ffffff;
     --danger: #a12a1f;
     --focus: #0f6b52;
+    --badge-devnet-text: #0b5c46;
+    --badge-devnet-bg: #eaf5ef;
+    --badge-devnet-border: #a9cdbd;
+    --badge-mainnet-text: #8f1f16;
+    --badge-mainnet-bg: #fbeeec;
+    --badge-mainnet-border: #dfb2ac;
+    --badge-testnet-text: #6b4a00;
+    --badge-testnet-bg: #fbf3df;
+    --badge-testnet-border: #ddc48f;
+    --badge-local-text: #4d5250;
+    --badge-local-bg: #f1f2ee;
+    --badge-local-border: #cfd1ca;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -344,6 +376,18 @@ function renderPage(token: string, defaultChain: string): string {
       --accent-contrast: #0b2019;
       --danger: #ffb4ab;
       --focus: #6fd7ac;
+      --badge-devnet-text: #7fe0b9;
+      --badge-devnet-bg: #12241c;
+      --badge-devnet-border: #2f5c4a;
+      --badge-mainnet-text: #ffb4ab;
+      --badge-mainnet-bg: #2a1917;
+      --badge-mainnet-border: #6b3a34;
+      --badge-testnet-text: #ffd479;
+      --badge-testnet-bg: #241f14;
+      --badge-testnet-border: #5c4a2a;
+      --badge-local-text: #b9c0bb;
+      --badge-local-bg: #1b201d;
+      --badge-local-border: #39403b;
     }
   }
   * { box-sizing: border-box; }
@@ -367,7 +411,31 @@ function renderPage(token: string, defaultChain: string): string {
   }
   h1 { margin: 0 0 6px; font-size: 20px; line-height: 1.3; letter-spacing: -0.01em; }
   .lede { margin: 0 0 6px; max-width: 52ch; color: var(--muted); font-size: 14px; }
-  .meta { margin: 0 0 20px; color: var(--muted); font-size: 12.5px; }
+  .meta-row { display: flex; align-items: center; gap: 8px; margin: 0 0 20px; color: var(--muted); font-size: 12.5px; }
+  .network {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+  .network-devnet { color: var(--badge-devnet-text); background: var(--badge-devnet-bg); border-color: var(--badge-devnet-border); }
+  .network-mainnet { color: var(--badge-mainnet-text); background: var(--badge-mainnet-bg); border-color: var(--badge-mainnet-border); }
+  .network-testnet { color: var(--badge-testnet-text); background: var(--badge-testnet-bg); border-color: var(--badge-testnet-border); }
+  .network-localnet { color: var(--badge-local-text); background: var(--badge-local-bg); border-color: var(--badge-local-border); }
+  .request {
+    margin: 16px 0 0;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+  }
+  .request .kicker { margin: 0 0 4px; color: var(--muted); font-size: 12px; }
+  .request h2 { margin: 0 0 4px; font-size: 16px; line-height: 1.35; }
+  .request p { margin: 0; color: var(--muted); font-size: 13.5px; }
   ul.wallets { list-style: none; margin: 0 0 16px; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   ul.wallets li + li { border-top: 1px solid var(--line); }
   button { font: inherit; cursor: pointer; }
@@ -420,7 +488,10 @@ function renderPage(token: string, defaultChain: string): string {
   <header>
     <h1>Approve with your wallet</h1>
     <p class="lede">The CLI on this machine is asking for signatures. Your keys stay in the wallet extension.</p>
-    <p class="meta">${chainLabel}, local bridge</p>
+    <p class="meta-row">
+      <span id="network" class="network network-${networkKey}">${networkLabel}</span>
+      <span>Local bridge</span>
+    </p>
   </header>
   <ul id="wallets" class="wallets" hidden></ul>
   <div id="empty" class="empty" hidden>
@@ -432,6 +503,11 @@ function renderPage(token: string, defaultChain: string): string {
     <code id="wallet-address"></code>
     <p id="count" class="count">No requests signed yet.</p>
   </div>
+  <section id="request" class="request" aria-live="polite" hidden>
+    <p class="kicker" id="request-count"></p>
+    <h2 id="request-title"></h2>
+    <p id="request-detail"></p>
+  </section>
   <p id="status" role="status" aria-live="polite">Looking for a wallet.</p>
 </main>
 <script>
@@ -446,6 +522,10 @@ function renderPage(token: string, defaultChain: string): string {
   var walletNameEl = document.getElementById("wallet-name");
   var walletAddressEl = document.getElementById("wallet-address");
   var countEl = document.getElementById("count");
+  var requestEl = document.getElementById("request");
+  var requestCountEl = document.getElementById("request-count");
+  var requestTitleEl = document.getElementById("request-title");
+  var requestDetailEl = document.getElementById("request-detail");
   var account = null;
   var wallet = null;
   var chain = defaultChain;
@@ -616,6 +696,7 @@ function renderPage(token: string, defaultChain: string): string {
       walletAddressEl.textContent = account.address;
       show(connectedEl, true);
       show(walletsEl, false);
+      show(requestEl, false);
       setStatus("Connected. Approve each request in your wallet.", "ok");
       watchAccount();
       poll();
@@ -673,20 +754,37 @@ function renderPage(token: string, defaultChain: string): string {
         }
         if (!res.ok) { setStatus("The CLI closed the connection. If the command finished, close this tab."); running = false; break; }
         var job = await res.json();
-        if (job.finished) { setStatus("The CLI finished. Close this tab."); running = false; break; }
+        if (job.finished) {
+          show(requestEl, false);
+          setStatus(
+            "The CLI finished. " +
+              (approvals === 1 ? "1 request signed." : approvals + " requests signed.") +
+              " Close this tab."
+          );
+          running = false;
+          break;
+        }
+        var label = job.label || (job.kind === "message" ? "Approve signature" : "Approve transaction");
+        requestCountEl.textContent = "Request " + (approvals + 1);
+        requestTitleEl.textContent = label;
+        requestDetailEl.textContent = job.detail || "";
+        show(requestDetailEl, Boolean(job.detail));
+        show(requestEl, true);
         setStatus("Waiting for approval. Check your wallet.");
         try {
           var signed = await sign(job);
           await post("/api/signed", { token: token, id: job.id, result: signed });
           approvals = approvals + 1;
           countEl.textContent = approvals === 1 ? "1 request signed." : approvals + " requests signed.";
-          setStatus("Signed. Waiting for the next request.", "ok");
+          show(requestEl, false);
+          setStatus("Signed: " + label + ". Waiting for the next request.", "ok");
         } catch (error) {
           await post("/api/error", {
             token: token,
             id: job.id,
             message: errorText(error)
           });
+          show(requestEl, false);
           setStatus("Request failed. " + errorText(error), "err");
         }
       } catch (error) {

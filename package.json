@@ -1,6 +1,6 @@
 {
   "name": "creation-of-nft-solana",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Create, verify, update and inspect professional Solana NFTs with Metaplex Token Metadata, Umi and Arweave (Irys) storage. Includes a reusable AI agent skill for NFT creation.",
   "keywords": [
     "solana",

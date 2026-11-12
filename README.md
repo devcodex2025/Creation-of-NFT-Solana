@@ -60,7 +60,7 @@ uploads.
 ### 2. Install
 
 ```bash
-git clone --branch v2.2.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
+git clone --branch v2.3.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -363,10 +363,13 @@ If the tab does not open, the CLI prints the bridge URL; paste it into the
 browser where the extension is installed. The page is loopback-only, so it has
 to stay on this machine.
 
-One mint needs two or three approvals: the Irys upload messages, the mint
-transaction, and the collection verification transaction. Nothing is signed
-silently, so this mode is for a human at the keyboard — an autonomous agent
-cannot approve for you.
+Minting an item takes four approvals: two Arweave upload messages, the mint
+transaction and the collection verification transaction. Creating the collection
+first takes three more: two uploads and the collection mint. The page shows a
+network badge, Devnet or Mainnet with a real-funds warning, and names the request
+you are approving, so a long run is easy to follow. Nothing is signed silently,
+so this mode is for a human at the keyboard. An autonomous agent cannot approve
+for you.
 
 The bridge is loopback only. It listens on `127.0.0.1` with a random port, a
 fresh 32-byte token per run, a `Host` header check, no cross-origin requests, and
@@ -444,7 +447,7 @@ verifying collections, royalties, launch checks and error handling.
 Install with the [skills CLI](https://www.skills.sh/):
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.2.0/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.0/skills/solana-nft-creation
 ```
 
 Or copy `skills/solana-nft-creation/` into your agent's skills directory:
@@ -468,7 +471,7 @@ the commands; it needs the toolkit too.
 2. Clone the pinned toolkit where the agent can reach it:
 
    ```bash
-   git clone --branch v2.2.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+   git clone --branch v2.3.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
    cd Creation-of-NFT-Solana
    npm ci
    cp .env.example .env

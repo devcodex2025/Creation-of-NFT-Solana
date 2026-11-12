@@ -23,7 +23,7 @@ import { randomBytes } from "node:crypto";
 import * as path from "node:path";
 import { cluster, connection } from "./config";
 import { loadSecretKey, repoRoot } from "./keypair";
-import { connectBrowserWallet, type BrowserWallet } from "./browser-bridge";
+import { connectBrowserWallet, type BrowserWallet, type RequestContext } from "./browser-bridge";
 
 export type StorageBackend = "irys" | "local";
 
@@ -83,23 +83,75 @@ function createLocalUploader(): UploaderInterface {
   };
 }
 
+const METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
+
+type BrowserAction = "collection" | "nft" | "update" | "verify" | "transaction";
+
+function describeTransaction(
+  transaction: UmiTransaction,
+  action: BrowserAction,
+): RequestContext {
+  for (const instruction of transaction.message.instructions) {
+    const programId = transaction.message.accounts[instruction.programIndex];
+    if (programId !== METADATA_PROGRAM_ID) continue;
+    const data = instruction.data;
+    if (data[0] === 52 && data[1] === 1) {
+      return {
+        label: "Approve collection verification",
+        detail: "Marks the NFT as a verified member of its collection on chain.",
+      };
+    }
+    if (data[0] === 42) {
+      return action === "collection"
+        ? {
+            label: "Approve collection creation",
+            detail: "Creates the collection NFT and its metadata account.",
+          }
+        : {
+            label: "Approve NFT mint",
+            detail: "Creates the NFT and its metadata account.",
+          };
+    }
+  }
+  if (action === "update") {
+    return {
+      label: "Approve metadata update",
+      detail: "Writes the new metadata to the NFT.",
+    };
+  }
+  return {
+    label: "Approve transaction",
+    detail: "Signs a Solana transaction built by the CLI.",
+  };
+}
+
 /**
  * Signs through the browser bridge. Umi passes the transaction, the wallet
  * signs the serialized bytes, and the signed transaction comes back with all
  * previously collected signatures intact.
  */
-function createBrowserSigner(wallet: BrowserWallet): Signer {
+function createBrowserSigner(
+  wallet: BrowserWallet,
+  action: BrowserAction,
+): Signer {
   const signTransaction = async (
     transaction: UmiTransaction,
   ): Promise<UmiTransaction> => {
     const bytes = toWeb3JsTransaction(transaction).serialize();
-    const signedBytes = await wallet.signTransaction(bytes);
+    const signedBytes = await wallet.signTransaction(
+      bytes,
+      describeTransaction(transaction, action),
+    );
     return fromWeb3JsTransaction(VersionedTransaction.deserialize(signedBytes));
   };
 
   return {
     publicKey: umiPublicKey(wallet.publicKey),
-    signMessage: (message) => wallet.signMessage(message),
+    signMessage: (message) =>
+      wallet.signMessage(message, {
+        label: "Approve upload signature",
+        detail: "Signs the Arweave upload so this file can be stored.",
+      }),
     signTransaction,
     signAllTransactions: async (transactions) => {
       const signed: UmiTransaction[] = [];
@@ -114,6 +166,7 @@ function createBrowserSigner(wallet: BrowserWallet): Signer {
 export interface ProjectUmiOptions {
   keypairPath?: string;
   signer?: SignerMode;
+  browserAction?: BrowserAction;
 }
 
 export async function createProjectUmi(
@@ -126,7 +179,7 @@ export async function createProjectUmi(
     const wallet = await connectBrowserWallet();
     console.log(`\n🔗  Wallet connected: ${wallet.publicKey}`);
     console.log(`   Approve each transaction in the browser tab.`);
-    umi.use(signerIdentity(createBrowserSigner(wallet)));
+    umi.use(signerIdentity(createBrowserSigner(wallet, options.browserAction ?? "transaction")));
   } else if (mode === "readonly") {
     // Reads do not need a real wallet; a throwaway signer keeps umi happy.
     umi.use(signerIdentity(generateSigner(umi)));

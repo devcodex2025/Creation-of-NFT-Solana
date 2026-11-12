@@ -74,6 +74,7 @@ assertOnChainLimits({ name, symbol });
 const umi = await createProjectUmi({
   keypairPath: getString(flags, "keypair"),
   signer: resolveSignerMode(getString(flags, "signer", process.env.SIGNER)),
+  browserAction: "nft",
 });
 
 // Preflight: never mint against a collection that does not exist on this

@@ -44,6 +44,7 @@ assertOnChainLimits({ name, symbol });
 const umi = await createProjectUmi({
   keypairPath: getString(flags, "keypair"),
   signer: resolveSignerMode(getString(flags, "signer", process.env.SIGNER)),
+  browserAction: "collection",
 });
 const wallet = umi.identity.publicKey;
 

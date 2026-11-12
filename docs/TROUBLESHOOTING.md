@@ -38,9 +38,11 @@ cannot be opened from another device.
 - **A remote/SSH machine** — the bridge binds to `127.0.0.1`, so forward the
   printed port (`ssh -L <port>:127.0.0.1:<port>`) or use a keypair file instead.
 
-A mint asks for two or three signatures: Irys upload messages, the mint
-transaction, and the collection verification. Rejecting any of them aborts the
-command before it spends SOL on the rest.
+An item mint asks for four signatures: two Arweave upload messages, the mint
+transaction and the collection verification. Creating the collection first adds
+three: two uploads and the collection mint. The page names each request, so you
+can see which step you are approving. Rejecting any of them aborts the command
+before it spends SOL on the rest.
 
 ### `410 Gone` when running `npm run fund`
 

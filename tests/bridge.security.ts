@@ -145,6 +145,8 @@ try {
     "page ships light and dark palettes",
     page.body.includes("prefers-color-scheme: dark"),
   );
+  check("page has a network badge", page.body.includes('class="network network-'));
+  check("page has a request panel", page.body.includes("request-title"));
   check("page never embeds the keypair path", !page.body.includes("keypair.json"));
 
   const wrongTokenConnect = await send(`${origin}/api/connect`, {
@@ -180,6 +182,21 @@ try {
 
   const wallet = await connecting;
   check("bridge reports the connected wallet", wallet.publicKey === publicKey, wallet.publicKey);
+
+  const pendingSign = wallet.signMessage(new Uint8Array([1]), {
+    label: "Approve upload signature",
+    detail: "Signs the Arweave upload so this file can be stored.",
+  });
+  pendingSign.catch(() => undefined);
+  const pendingJob = await send(`${origin}/api/pending?token=${token}`);
+  const pendingBody = JSON.parse(pendingJob.body) as { label?: string; detail?: string };
+  check(
+    "pending request carries a label",
+    pendingJob.status === 200 &&
+      pendingBody.label === "Approve upload signature" &&
+      Boolean(pendingBody.detail),
+    pendingJob.body,
+  );
 
   const closing = wallet.close();
   const finished = await send(`${origin}/api/pending?token=${token}`);

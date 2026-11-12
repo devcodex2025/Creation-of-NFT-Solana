@@ -7,7 +7,7 @@
 ## Install
 
 ```bash
-git clone --branch v2.2.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.3.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -34,7 +34,8 @@ the first `--` and the flags never reach the script.
   `~/.config/solana/id.json`. Explicit paths must exist.
 - `--signer browser`: Phantom, Solflare or Backpack sign through a temporary
   page on `127.0.0.1`. The key never leaves the extension. A human must approve
-  two or three requests per mint.
+  four requests per item mint (two uploads, mint, verification) and three for
+  the collection.
 - `--signer readonly`: no signer, for commands that only read.
 
 Every fee is paid on chain to Solana and to storage; the toolkit takes no fee.
@@ -45,7 +46,7 @@ Every fee is paid on chain to Solana and to storage; the toolkit takes no fee.
 agents. Install with:
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.2.0/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.0/skills/solana-nft-creation
 ```
 
 Verify discovery without installing:

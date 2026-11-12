@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.3.0 — 2026-11-12
+
+### Added
+
+- Network badge on the approval page: Devnet, Testnet, Localnet, or Mainnet with
+  a real-funds warning. The badge has its own light and dark colors and meets
+  WCAG AA.
+- Each request is named before the wallet opens: upload signature, collection
+  creation, NFT mint, collection verification, metadata update.
+- Request counter ("Request 2") and a final message with the number of signed
+  requests.
+- The CLI derives the name from the Token Metadata instruction and the command
+  action, so the page does not guess.
+
+### Changed
+
+- Docs now state the real number of approvals: four for an item mint (two
+  uploads, mint, verification) and three for the collection.
+
 ## 2.2.0 — 2026-11-12
 
 ### Changed
