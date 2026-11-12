@@ -4,7 +4,7 @@ description: Create a Solana NFT from an empty folder to a verified collection m
 license: MIT
 metadata:
   author: devcodex2025
-  version: "1.0.0"
+  version: "2.0.1"
   homepage: https://github.com/devcodex2025/Creation-of-NFT-Solana
 ---
 
@@ -312,7 +312,7 @@ Read the source before running it. Every command is one file under
 This skill is maintained alongside a working TypeScript toolkit:
 
 ```bash
-git clone --branch v2.0.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.0.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -341,7 +341,7 @@ supports devnet, mainnet and a local validator. Install it as a skill from the
 pinned release:
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.0.0/skills/nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.0.1/skills/nft-creation
 ```
 
 ## References

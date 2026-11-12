@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.1 — 2026-11-12
+
+### Changed
+
+- Skill metadata `version` now tracks the repository release instead of
+  staying at 1.0.0.
+- Install and clone instructions point at `v2.0.1`.
+
+No functional changes since 2.0.0.
+
 ## 2.0.0 — 2026-11-10
 
 ### Added
