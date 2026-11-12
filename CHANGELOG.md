@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.1.0 — 2026-11-12
+
+### Changed
+
+- Skill renamed from `nft-creation` to `solana-nft-creation`, so the name says
+  what it does and which chain it targets. The directory and every install URL
+  moved with it.
+- Pinned URLs point at `v2.1.0`.
+
+No functional changes to the CLI or the bridge.
+
 ## 2.0.1 — 2026-11-12
 
 ### Changed

@@ -7,7 +7,7 @@
 ## Install
 
 ```bash
-git clone --branch v2.0.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.1.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -41,11 +41,11 @@ Every fee is paid on chain to Solana and to storage; the toolkit takes no fee.
 
 ## Skill
 
-`skills/nft-creation/SKILL.md` — professional NFT creation workflow for AI
+`skills/solana-nft-creation/SKILL.md` — professional NFT creation workflow for AI
 agents. Install with:
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.0.1/skills/nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.1.0/skills/solana-nft-creation
 ```
 
 Verify discovery without installing:
@@ -63,10 +63,10 @@ prompt.
 - [README](README.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [Metadata standard](skills/nft-creation/references/metadata-standard.md)
-- [Launch checklist](skills/nft-creation/references/launch-checklist.md)
-- [Storage](skills/nft-creation/references/storage.md)
-- [Code recipes](skills/nft-creation/references/code-recipes.md)
+- [Metadata standard](skills/solana-nft-creation/references/metadata-standard.md)
+- [Launch checklist](skills/solana-nft-creation/references/launch-checklist.md)
+- [Storage](skills/solana-nft-creation/references/storage.md)
+- [Code recipes](skills/solana-nft-creation/references/code-recipes.md)
 
 ## Notes for AI agents
 

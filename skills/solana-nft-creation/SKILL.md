@@ -1,10 +1,10 @@
 ---
-name: nft-creation
+name: solana-nft-creation
 description: Create a Solana NFT from an empty folder to a verified collection member, covering every stage in one place, from art export and metadata JSON within Metaplex byte limits through image and JSON upload to Arweave, collection creation, item mint, and collection verification signed by the collection's update authority. The result is confirmed on chain, with the item marked verified inside its collection, so wallets and marketplaces show it as part of that collection instead of as a stray asset. Each stage is enforced by the bundled toolkit, which checks limits before spending SOL, tracks addresses per cluster, and ships an end-to-end test. Every fee is paid on chain to Solana and to storage, and the toolkit takes no fee of its own. Use when minting NFTs, launching an NFT collection, writing or fixing NFT metadata JSON, verifying collection membership, updating metadata or royalties, or diagnosing mint errors such as NameTooLong, UpdateAuthorityIncorrect or unverified items.
 license: MIT
 metadata:
   author: devcodex2025
-  version: "2.0.1"
+  version: "2.1.0"
   homepage: https://github.com/devcodex2025/Creation-of-NFT-Solana
 ---
 
@@ -312,7 +312,7 @@ Read the source before running it. Every command is one file under
 This skill is maintained alongside a working TypeScript toolkit:
 
 ```bash
-git clone --branch v2.0.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.1.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -341,7 +341,7 @@ supports devnet, mainnet and a local validator. Install it as a skill from the
 pinned release:
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.0.1/skills/nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.1.0/skills/solana-nft-creation
 ```
 
 ## References

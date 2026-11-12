@@ -8,7 +8,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![Solana](https://img.shields.io/badge/Solana-devnet%20%7C%20mainnet-9945FF?logo=solana&logoColor=white)](https://solana.com)
 [![Metaplex](https://img.shields.io/badge/Metaplex-Token%20Metadata-000000)](https://developers.metaplex.com/token-metadata)
-[![AI Agent Skill](https://img.shields.io/badge/AI%20agent-skill-8A2BE2)](skills/nft-creation/SKILL.md)
+[![AI Agent Skill](https://img.shields.io/badge/AI%20agent-skill-8A2BE2)](skills/solana-nft-creation/SKILL.md)
 
 <img src="assets/lil_turtle_collection.webp" alt="Lil Turtle collection artwork" width="420" />
 
@@ -19,7 +19,7 @@ Solana. It replaces the usual copy-paste tutorial scripts with commands that
 keep state, validate Metaplex limits, verify collections, and work on devnet,
 mainnet and a local validator.
 
-It also ships an [agent skill](skills/nft-creation/SKILL.md) so AI coding
+It also ships an [agent skill](skills/solana-nft-creation/SKILL.md) so AI coding
 agents can do the whole workflow correctly.
 
 ---
@@ -60,7 +60,7 @@ uploads.
 ### 2. Install
 
 ```bash
-git clone --branch v2.0.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
+git clone --branch v2.1.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana.git
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -294,7 +294,7 @@ markup, and holds no funds at any point.
 ├── tests/e2e.localnet.ts  # full flow against a local validator
 ├── metadata/              # JSON templates for collections and items
 ├── assets/                # sample artwork
-├── skills/nft-creation/   # installable AI agent skill
+├── skills/solana-nft-creation/   # installable AI agent skill
 ├── docs/                  # architecture and troubleshooting
 └── state/                 # generated per-cluster addresses (gitignored)
 ```
@@ -342,7 +342,7 @@ Mainnet checklist before switching `SOLANA_CLUSTER=mainnet-beta`:
 - test the exact metadata on devnet first,
 - back up the keypair,
 - decide who keeps the update authority,
-- read [the launch checklist](skills/nft-creation/references/launch-checklist.md).
+- read [the launch checklist](skills/solana-nft-creation/references/launch-checklist.md).
 
 ### Signing with Phantom or Solflare
 
@@ -405,7 +405,7 @@ Hard limits enforced by the CLI:
 | URI | 200 bytes |
 | Royalty | 0–10000 basis points |
 
-Full schema and examples: [metadata standard](skills/nft-creation/references/metadata-standard.md).
+Full schema and examples: [metadata standard](skills/solana-nft-creation/references/metadata-standard.md).
 
 ## Testing
 
@@ -433,17 +433,17 @@ does not have Token Metadata cloned you will see
 
 ## AI agent skill
 
-[`skills/nft-creation`](skills/nft-creation/SKILL.md) teaches an agent the whole
+[`skills/solana-nft-creation`](skills/solana-nft-creation/SKILL.md) teaches an agent the whole
 workflow: choosing a token standard, writing metadata, uploading to Arweave,
 verifying collections, royalties, launch checks and error handling.
 
 Install with the [skills CLI](https://www.skills.sh/):
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.0.1/skills/nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.1.0/skills/solana-nft-creation
 ```
 
-Or copy `skills/nft-creation/` into your agent's skills directory:
+Or copy `skills/solana-nft-creation/` into your agent's skills directory:
 
 | Agent | Personal directory |
 |---|---|
@@ -460,11 +460,11 @@ the commands; it needs the toolkit too.
 
 1. Install the skill and restart the agent so it reloads its skill list. Check
    the install with `npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana -l`,
-   which lists `nft-creation` without installing anything.
+   which lists `solana-nft-creation` without installing anything.
 2. Clone the pinned toolkit where the agent can reach it:
 
    ```bash
-   git clone --branch v2.0.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+   git clone --branch v2.1.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
    cd Creation-of-NFT-Solana
    npm ci
    cp .env.example .env
