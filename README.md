@@ -62,7 +62,7 @@ Ask your agent for the result, not the steps:
 
 Or hand it a folder of art:
 
-> Mint the whole collection in `abstract-lil-turtles/collection.json` on devnet.
+> Mint the whole collection described in `collection.json` on devnet.
 > Run it on devnet first, show me the addresses, and only then tell me what a
 > mainnet run would cost.
 
@@ -197,8 +197,8 @@ One manifest describes the collection and every item:
 ```
 
 ```bash
-npm run create:batch -- --manifest abstract-lil-turtles/collection.json --dry-run
-npm run create:batch -- --manifest abstract-lil-turtles/collection.json
+npm run create:batch -- --manifest collection.json --dry-run
+npm run create:batch -- --manifest collection.json
 ```
 
 The dry run prints the item count, the rent estimate and every name against the

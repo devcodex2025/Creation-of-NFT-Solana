@@ -72,7 +72,7 @@ The skill drives the CLI above; clone the pinned toolkit first. Example prompt:
 
 Or for a folder of art:
 
-> Mint the whole collection in `abstract-lil-turtles/collection.json` on devnet.
+> Mint the whole collection described in `collection.json` on devnet.
 > Show me the addresses, then tell me what a mainnet run would cost.
 
 See "Install the skill" at the top of the README.
