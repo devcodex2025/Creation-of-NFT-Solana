@@ -4,8 +4,9 @@
 
 ### `No keypair found`
 
-The CLI looks in `KEYPAIR_PATH`, `./keypair.json`, then
-`~/.config/solana/id.json`. Create one:
+The CLI looks in `--keypair`, `KEYPAIR_PATH`, then `./keypair.json`. It does
+not read `~/.config/solana/id.json` unless you name it. Create a project
+keypair:
 
 ```bash
 npm run keypair
@@ -135,7 +136,7 @@ second separator or call the script directly:
 
 ```bash
 npm run update -- -- --mint <address> --immutable
-npx esrun src/commands/update-nft.ts --mint <address> --immutable
+npx esrun@3.2.30 src/commands/update-nft.ts --mint <address> --immutable
 ```
 
 The toolkit warns when it receives no flags at all.

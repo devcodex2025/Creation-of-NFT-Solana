@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.5.0 — 2026-11-14
+
+### Security
+
+- The Solana CLI wallet (`~/.config/solana/id.json`) is no longer read
+  implicitly. Only `--keypair`, `KEYPAIR_PATH` or `./keypair.json` are used.
+- Keypair files readable by other users produce a warning; new keypairs are
+  written with mode `0600`; secret byte arrays are zeroed after the signer
+  copies them.
+- Every browser approval now shows the recipient, amount, estimated network fee,
+  programs and full operation list, in the page and in the terminal. Unknown
+  programs are called out.
+- NFT metadata and external JSON are size-capped, shape-validated, stripped of
+  control characters and treated as untrusted data in the skill docs.
+- `npx skills` and `npx esrun` are pinned in every documented command.
+- Dependencies updated: axios 1.21.1, form-data 4.0.6, lodash 4.18.1, ws 8.23.0,
+  picomatch 2.3.2, tmp 0.2.7. `ws` is overridden inside `@ethersproject/providers`.
+- The abandoned `bigint-buffer` (CVE-2025-3194) is replaced by
+  `vendor/bigint-buffer`, a pure-JavaScript implementation.
+- Metaplex packages aligned to 1.6.0.
+- `npm run test:security` covers the bigint replacement and the metadata
+  sanitizer.
+- `docs/SECURITY-AUDIT.md` records each finding as fixed, false positive or
+  accepted risk.
+
+### Changed
+
+- `npm audit` reports 0 critical and 0 high findings.
+
 ## 2.4.0 — 2026-11-14
 
 ### Added
