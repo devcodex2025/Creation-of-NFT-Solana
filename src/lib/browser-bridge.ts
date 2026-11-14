@@ -94,6 +94,9 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
       pending = null;
     }
     server.close();
+    // A browser tab keeps the connection alive with keep-alive polls, which
+    // would keep the CLI process running after the run is finished.
+    server.closeAllConnections();
   }
 
   async function finish(): Promise<void> {
