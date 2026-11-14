@@ -86,12 +86,38 @@ function createLocalUploader(): UploaderInterface {
 const METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
 const SYSTEM_PROGRAM_ID = "11111111111111111111111111111111";
 
-export type BrowserAction = "collection" | "nft" | "update" | "verify" | "transaction";
+export type BrowserAction =
+  | "collection"
+  | "nft"
+  | "update"
+  | "verify"
+  | "batch"
+  | "transaction";
 
 export function describeTransaction(
   transaction: UmiTransaction,
   action: BrowserAction,
 ): RequestContext {
+  // Delegation changes are the point of the batch approval, so they are named
+  // before the create instruction that shares the same transaction.
+  for (const instruction of transaction.message.instructions) {
+    const programId = transaction.message.accounts[instruction.programIndex];
+    if (programId !== METADATA_PROGRAM_ID) continue;
+    const data = instruction.data;
+    if (data[0] === 44) {
+      return {
+        label: "Approve collection delegation",
+        detail: "Lets the temporary batch key verify items in this collection.",
+      };
+    }
+    if (data[0] === 45) {
+      return {
+        label: "Revoke collection delegation",
+        detail: "Removes the temporary batch key's permission.",
+      };
+    }
+  }
+
   for (const instruction of transaction.message.instructions) {
     const programId = transaction.message.accounts[instruction.programIndex];
     if (programId !== METADATA_PROGRAM_ID) continue;
@@ -100,6 +126,12 @@ export function describeTransaction(
       return {
         label: "Approve collection verification",
         detail: "Marks the NFT as a verified member of its collection on chain.",
+      };
+    }
+    if (data[0] === 52 && data[1] === 0) {
+      return {
+        label: "Approve creator verification",
+        detail: "Marks the wallet as a verified creator of these NFTs.",
       };
     }
     if (data[0] === 42) {
@@ -119,6 +151,12 @@ export function describeTransaction(
     if (programId !== SYSTEM_PROGRAM_ID) continue;
     const data = instruction.data;
     if (data[0] === 2 && data[1] === 0 && data[2] === 0 && data[3] === 0) {
+      if (action === "batch") {
+        return {
+          label: "Approve batch funding",
+          detail: "Sends SOL to the temporary batch key for rent and uploads.",
+        };
+      }
       return {
         label: "Approve storage payment",
         detail: "Pays Irys for the Arweave upload.",

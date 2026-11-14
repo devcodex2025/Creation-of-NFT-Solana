@@ -2,7 +2,7 @@
 
 # Solana NFT Creation Toolkit
 
-**Create, mint, verify, update and inspect professional NFTs on Solana — with Metaplex Token Metadata, Umi and Arweave storage.**
+**Create, mint, verify, update and inspect professional NFTs on Solana — with Metaplex Token Metadata, Umi and Arweave storage. One item or a whole collection, from a folder of art to verified members.**
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org)
@@ -27,11 +27,12 @@ agents can do the whole workflow correctly.
 Describe the result in plain language and the agent does the work:
 
 - creates a collection and mints NFTs into it;
+- mints a whole collection from one manifest, in batches, with a few wallet approvals;
 - uploads the art and metadata to Arweave before minting;
 - verifies each item and attaches it to the right collection;
 - finds why an item shows without a preview or with broken metadata, then fixes the metadata or the verification;
 - signs transactions in Phantom, Solflare or Backpack through the browser bridge;
-- runs on devnet for testing or mainnet with real funds;
+- runs on devnet for testing or mainnet with real funds, and refuses a mainnet batch until you confirm;
 - handles the steps that are usually manual: byte limits, upload order, verification and state.
 
 You do not need to learn every instruction or run each command. Say what you
@@ -41,7 +42,7 @@ and Explorer links.
 ## Install the skill
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.2/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.4.0/skills/solana-nft-creation
 ```
 
 Restart the agent so it reloads its skill list.
@@ -49,7 +50,7 @@ Restart the agent so it reloads its skill list.
 The skill drives the toolkit in this repository. Clone it once:
 
 ```bash
-git clone --branch v2.3.2 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.4.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana && npm ci && cp .env.example .env
 ```
 
@@ -59,11 +60,18 @@ Ask your agent for the result, not the steps:
 > devnet, using assets/lil_turtle_collection.webp. Then mint one item and confirm
 > it is verified on chain.
 
+Or hand it a folder of art:
+
+> Mint the whole collection in `abstract-lil-turtles/collection.json` on devnet.
+> Run it on devnet first, show me the addresses, and only then tell me what a
+> mainnet run would cost.
+
 More things to ask for:
 
 - `Mint another item into the Lil Turtles collection.`
 - `The item shows outside the collection. Verify it.`
 - `Set the royalty to 7.5% and keep the traits.`
+- `Mint the remaining items, skip the ones already done, and keep the fees low.`
 
 The agent reads `SKILL.md`, checks the limits before spending SOL and verifies
 the result on chain. Signatures stay in your wallet: a keypair file by default,
@@ -102,6 +110,9 @@ uploads.
 ## Features
 
 - **Collection + items** — create a verified Metaplex collection and mint NFTs into it.
+- **Whole collections** — `create:batch` mints every item in a manifest, with resume on failure.
+- **Fewer signatures** — a batch needs three browser approvals, not three per item.
+- **Fee control** — two upload bundles instead of two per item, one transaction per mint plus verification, optional `--priority-fee`, and unused SOL swept back.
 - **Automatic verification** — `create:nft` verifies membership by default; `verify` fixes existing mints.
 - **State-aware CLI** — addresses are stored in `state/<cluster>.json`, so you never paste them between steps.
 - **Safe updates** — preserves image, attributes and external URL when you only change the name.
@@ -109,6 +120,7 @@ uploads.
 - **Arweave storage** — Irys uploader with the endpoint chosen from the cluster.
 - **Inspect** — `show` prints on-chain data, collection verification and off-chain JSON.
 - **Browser wallets** — `--signer browser` signs with Phantom, Solflare or Backpack; the key stays in the extension.
+- **Devnet first** — a mainnet batch refuses to start without `--mainnet`.
 - **Local testing** — `test:e2e` runs the full flow against a local validator with no faucet.
 - **AI agent skill** — a complete `SKILL.md` plus references for professional NFT work.
 
@@ -164,7 +176,44 @@ npm run create:nft -- \
 The collection address is read from state. The NFT is verified into the
 collection automatically.
 
-### 6. Check it
+### 6. Or mint the whole collection at once
+
+One manifest describes the collection and every item:
+
+```json
+{
+  "collection": {
+    "name": "Abstract Lil Turtle",
+    "symbol": "ABSLIL",
+    "description": "Hand-crafted turtles.",
+    "image": "logo.gif",
+    "royalty": 5
+  },
+  "items": [
+    { "name": "Lil Turtle #1", "image": "images/1.webp", "attributesFile": "attributes/1.json" },
+    { "name": "Lil Turtle #2", "image": "images/2.webp", "attributesFile": "attributes/2.json" }
+  ]
+}
+```
+
+```bash
+npm run create:batch -- --manifest abstract-lil-turtles/collection.json --dry-run
+npm run create:batch -- --manifest abstract-lil-turtles/collection.json
+```
+
+The dry run prints the item count, the rent estimate and every name against the
+Metaplex byte limits, without reading a file from the network or opening a
+wallet. The real run creates the collection, uploads all art in one bundle and
+all metadata in a second bundle, then mints each item and verifies it in the
+same transaction.
+
+With `--signer browser` the whole collection needs three approvals: fund a
+temporary key, create the collection and delegate verification, revoke the
+delegation. The temporary key lives in memory only, mints every item, and sends
+what is left back to your wallet at the end. `--verify-creators` adds one
+approval per 20 items.
+
+### 7. Check it
 
 ```bash
 npm run show
@@ -187,17 +236,21 @@ That is the whole loop. Everything else is optional.
 
 ## Live example on devnet
 
-Minted with this toolkit, metadata and art on Arweave:
+24 items minted from one manifest with this toolkit, art and metadata on Arweave:
 
 | What | Address |
 |---|---|
-| Collection | [`4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX`](https://explorer.solana.com/address/4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX?cluster=devnet) |
-| Item | [`28yf57a5AcSxoh3GcAa6hW6D3Jf8M6TVWze9TSUF4Tzv`](https://explorer.solana.com/address/28yf57a5AcSxoh3GcAa6hW6D3Jf8M6TVWze9TSUF4Tzv?cluster=devnet) |
-| Metadata JSON | [gateway.irys.xyz](https://gateway.irys.xyz/6jjpGPrHo2XJyp9pkNym1tVve7uBTcdMJtUBkipGnmJH) |
+| Collection | [`45mjHvLTANbCbb9uYDKmmA2xjp22yVLQBSyo6RxZyHeK`](https://explorer.solana.com/address/45mjHvLTANbCbb9uYDKmmA2xjp22yVLQBSyo6RxZyHeK?cluster=devnet) |
+| First item | [`8tCNfM6q4WUNXFN5qpu73LbkmQt4fADGv4BNE5Wnz8Lq`](https://explorer.solana.com/address/8tCNfM6q4WUNXFN5qpu73LbkmQt4fADGv4BNE5Wnz8Lq?cluster=devnet) |
+| Last item | [`GoCakv4u7BUU1odokfFUMgL9CzfFGNRuULMW1FyMgYri`](https://explorer.solana.com/address/GoCakv4u7BUU1odokfFUMgL9CzfFGNRuULMW1FyMgYri?cluster=devnet) |
 
-The item carries `collection.verified = true` on chain, which is what puts it
-inside the collection in wallets and marketplaces. Open the item in Explorer and
-check the metadata account to see the flag yourself.
+All 24 items carry `collection.verified = true` and a verified creator on chain,
+the collection reports 24 verified items, and the temporary batch key was
+revoked and closed. Open any item in Explorer and check the metadata account to
+see the flag yourself.
+
+An earlier single-item example is still live at
+[`4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX`](https://explorer.solana.com/address/4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX?cluster=devnet).
 
 ## Commands
 
@@ -208,6 +261,7 @@ check the metadata account to see the flag yourself.
 | `npm run fund -- --amount 5` | Airdrop on localnet/devnet when the faucet allows |
 | `npm run create:collection` | Upload art + metadata and mint a collection NFT |
 | `npm run create:nft` | Upload art + metadata and mint an NFT into the collection |
+| `npm run create:batch` | Mint a whole collection from one manifest, with batches and resume |
 | `npm run verify` | Verify an existing NFT belongs to a collection |
 | `npm run update` | Update metadata, image, royalty, authority or immutability |
 | `npm run show` | Print on-chain + off-chain NFT details |
@@ -280,6 +334,29 @@ default mint is hard to miss.
 | `--nft` | last minted NFT | NFT mint address |
 | `--collection` | from state | Collection mint address |
 
+### `create:batch`
+
+| Flag | Default | Notes |
+|---|---|---|
+| `--manifest` | required | JSON manifest with `collection` and `items` |
+| `--collection` | from manifest | Mint into an existing collection instead of creating one |
+| `--dry-run` | off | Print the plan and limits, touch nothing |
+| `--limit` | all items | Mint only the first N pending items |
+| `--fund` | estimated | SOL to move to the temporary batch key |
+| `--priority-fee` | `0` | Micro-lamports per compute unit |
+| `--verify-creators` | off | Also verify the wallet as creator, one approval per 20 items |
+| `--mainnet` | off | Required to run on `mainnet-beta` |
+| `--name`, `--symbol`, `--image`, `--royalty` | from manifest | Override the collection block |
+
+Manifest paths are resolved relative to the manifest file. An item needs `name`
+and `image`; `attributesFile` is optional and may hold either a trait array or a
+full metadata JSON. Progress is written to `state/<cluster>.json`, so a run that
+stops halfway resumes without paying for the same uploads twice:
+
+```bash
+npm run create:batch -- --manifest collection.json --collection <address>
+```
+
 ### `update`
 
 | Flag | Default | Notes |
@@ -316,7 +393,9 @@ flowchart LR
 3. **Mint** — `createNft` from `@metaplex-foundation/mpl-token-metadata` creates
    the mint, token account and metadata account.
 4. **Verify** — `verifyCollectionV1` proves the collection's update authority
-   approved the item. Marketplaces use this flag.
+   approved the item. Marketplaces use this flag. In a batch the wallet delegates
+   that right to a temporary key with `delegateCollectionV1`, and revokes it when
+   the run ends, so the wallet signs once instead of once per item.
 5. **Record** — the address and signature go to `state/<cluster>.json` so the
    next command can find them.
 
@@ -333,6 +412,11 @@ These are the only costs. Every one of them is paid on chain from your wallet to
 Solana and to the storage network. The toolkit takes no fee of its own, adds no
 markup, and holds no funds at any point.
 
+A batch keeps the count down: two storage payments for the whole collection, one
+transaction per item instead of three, and the temporary key is swept back to
+your wallet at the end. 24 items cost roughly 0.23 SOL of rent on devnet, plus
+storage, plus 26 transactions.
+
 ## Project structure
 
 ```text
@@ -341,6 +425,7 @@ markup, and holds no funds at any point.
 │   ├── commands/          # one file per CLI command
 │   │   ├── create-collection.ts
 │   │   ├── create-nft.ts
+│   │   ├── create-batch.ts
 │   │   ├── verify-collection.ts
 │   │   ├── update-nft.ts
 │   │   ├── show-nft.ts
@@ -420,11 +505,18 @@ If the tab does not open, the CLI prints the bridge URL; paste it into the
 browser where the extension is installed. The page is loopback-only, so it has
 to stay on this machine.
 
-Minting an item takes four approvals: two Arweave upload messages, the mint
+Minting one item takes four approvals: two Arweave upload messages, the mint
 transaction and the collection verification transaction. Creating the collection
 first takes three more: two uploads and the collection mint. When Irys needs a
 top-up, it adds one storage payment transaction, so a first run can ask for one
-more. The page shows a network badge, Devnet or Mainnet with a real-funds
+more.
+
+A batch is different, and this is the point of it: the whole collection takes
+three approvals. The CLI funds a temporary key that lives in memory, the wallet
+creates the collection and delegates verification to that key, every item is
+minted and verified without the wallet, and the wallet revokes the delegation at
+the end. `--verify-creators` adds one approval per 20 items. The page shows a
+network badge, Devnet or Mainnet with a real-funds
 warning, and names the request you are approving, so a long run is easy to
 follow. Nothing is signed silently, so this mode is for a human at the keyboard.
 An autonomous agent cannot approve for you.
@@ -523,6 +615,7 @@ Install it at the [top of this README](#install-the-skill).
 | `Name is N bytes` | UTF-8 limit | Shorten the name |
 | `Collection ... was not found` | State points at an old ledger | Re-create the collection or pass `--collection` |
 | `insufficient funds for rent` | Wallet below ~0.02 SOL | Fund the wallet |
+| `429 Too Many Requests` during a batch | Public devnet RPC rate limit | Wait, or set `RPC_URL` to another endpoint |
 | Irys upload hangs | Network/funding | Check balance, retry, or use `STORAGE=local` locally |
 
 More: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).

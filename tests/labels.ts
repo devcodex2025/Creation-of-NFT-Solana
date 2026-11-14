@@ -52,6 +52,11 @@ check(
   "Approve collection verification",
 );
 check(
+  "creator verification",
+  describeTransaction(tx([METADATA], [[52, 0]]), "batch").label ?? "",
+  "Approve creator verification",
+);
+check(
   "storage payment",
   describeTransaction(tx([SYSTEM], [[2, 0, 0, 0]]), "nft").label ?? "",
   "Approve storage payment",
@@ -76,6 +81,33 @@ check(
     "nft",
   ).label ?? "",
   "Approve NFT mint",
+);
+check(
+  "collection create plus delegation",
+  describeTransaction(
+    tx([METADATA, METADATA], [
+      [42, 0],
+      [44, 0],
+    ]),
+    "batch",
+  ).label ?? "",
+  "Approve collection delegation",
+);
+check(
+  "batch funding plus delegation",
+  describeTransaction(
+    tx([SYSTEM, METADATA], [
+      [2, 0, 0, 0],
+      [44, 0],
+    ]),
+    "batch",
+  ).label ?? "",
+  "Approve collection delegation",
+);
+check(
+  "revoking delegation",
+  describeTransaction(tx([METADATA], [[45, 0]]), "batch").label ?? "",
+  "Revoke collection delegation",
 );
 
 if (failures.length > 0) {

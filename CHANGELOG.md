@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.4.0 — 2026-11-14
+
+### Added
+
+- `create:batch` mints a whole collection from one manifest: collection block,
+  item list, relative paths, optional `attributesFile`, `--dry-run`, `--limit`,
+  `--fund`, `--priority-fee`, `--verify-creators` and `--mainnet`.
+- Batch fee optimization: one upload bundle for all art and one for all
+  metadata, a temporary in-memory key that mints and verifies each item in one
+  transaction, and a sweep of leftover SOL back to the wallet.
+- Three browser approvals for a whole collection: fund the temporary key, create
+  the collection and delegate verification, revoke the delegation.
+- `--verify-creators` verifies the wallet as creator, 20 items per approval.
+- A mainnet batch refuses to start without `--mainnet` and recommends a devnet
+  run first.
+- A full devnet run of 24 items is documented in the README with addresses.
+
+### Changed
+
+- Batch verification uses `delegateCollectionV1` and `revokeCollectionV1` with
+  `MetadataDelegateRole.Collection`. The legacy `approveCollectionAuthority`
+  path resolves the wrong PDA and fails with `UpdateAuthorityIncorrect` (0x7).
+- The item update authority is the temporary key during `create`, then moved to
+  the wallet in the same transaction with `updateMetadataAccountV2`.
+- New request labels: "Approve collection delegation", "Revoke collection
+  delegation" and "Approve creator verification". `npm run test:labels` covers
+  them.
+- The skill description and README now cover whole collections, batches, fee
+  optimization, devnet and mainnet, and the devnet-first recommendation.
+
 ## 2.3.2 — 2026-11-12
 
 ### Added

@@ -22,11 +22,31 @@ export interface CollectionRecord {
   createdAt: string;
 }
 
+/**
+ * Batch progress exists so a failed run resumes instead of paying for the same
+ * Arweave uploads again. The temporary signing key is never stored, only the
+ * public results.
+ */
+export interface BatchItemRecord {
+  name: string;
+  imageUri?: string;
+  metadataUri?: string;
+  address?: string;
+  signature?: string;
+}
+
+export interface BatchRecord {
+  collection: string;
+  items: BatchItemRecord[];
+  updatedAt: string;
+}
+
 export interface ProjectState {
   cluster: string;
   wallet?: string;
   collection?: CollectionRecord;
   nfts: NftRecord[];
+  batch?: BatchRecord;
 }
 
 function stateFilePath(): string {
@@ -48,6 +68,7 @@ export function readState(): ProjectState {
     wallet: parsed.wallet,
     collection: parsed.collection,
     nfts: Array.isArray(parsed.nfts) ? parsed.nfts : [],
+    batch: parsed.batch,
   };
 }
 
@@ -105,4 +126,37 @@ export function setWallet(address: string): void {
 
 export function stateFile(): string {
   return stateFilePath();
+}
+
+/** Upload and mint progress for the active batch, keyed by collection. */
+export function readBatchItems(collection: string): BatchItemRecord[] {
+  const state = readState();
+  if (!state.batch || state.batch.collection !== collection) return [];
+  return state.batch.items;
+}
+
+export function saveBatchItem(
+  collection: string,
+  item: BatchItemRecord,
+): void {
+  const state = readState();
+  const items =
+    state.batch && state.batch.collection === collection
+      ? state.batch.items
+      : [];
+  const index = items.findIndex((entry) => entry.name === item.name);
+  if (index >= 0) items[index] = { ...items[index], ...item };
+  else items.push(item);
+  state.batch = {
+    collection,
+    items,
+    updatedAt: new Date().toISOString(),
+  };
+  writeState(state);
+}
+
+export function clearBatch(): void {
+  const state = readState();
+  delete state.batch;
+  writeState(state);
 }

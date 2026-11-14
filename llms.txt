@@ -1,13 +1,14 @@
 # Solana NFT Creation Toolkit
 
 > Create, mint, verify, update and inspect professional NFTs on Solana with
-> Metaplex Token Metadata, Umi and Arweave (Irys). Includes a production CLI
-> and an installable AI agent skill.
+> Metaplex Token Metadata, Umi and Arweave (Irys). Mint one item or a whole
+> collection from a manifest, with batches and built-in fee optimization.
+> Includes a production CLI and an installable AI agent skill.
 
 ## Install
 
 ```bash
-git clone --branch v2.3.2 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.4.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 cp .env.example .env
@@ -18,6 +19,7 @@ npm run keypair
 
 - `npx esrun src/commands/create-collection.ts` — create a Metaplex collection NFT.
 - `npx esrun src/commands/create-nft.ts` — mint an NFT into the collection and verify it.
+- `npx esrun src/commands/create-batch.ts` — mint a whole collection from one manifest, in batches, with resume.
 - `npx esrun src/commands/verify-collection.ts` — verify an existing NFT's collection membership.
 - `npx esrun src/commands/update-nft.ts` — update metadata, image, royalty, authority or immutability.
 - `npx esrun src/commands/show-nft.ts` — print on-chain and off-chain NFT data.
@@ -35,7 +37,9 @@ the first `--` and the flags never reach the script.
 - `--signer browser`: Phantom, Solflare or Backpack sign through a temporary
   page on `127.0.0.1`. The key never leaves the extension. A human must approve
   four requests per item mint (two uploads, mint, verification) and three for
-  the collection, plus one storage payment when Irys needs funding.
+  the collection, plus one storage payment when Irys needs funding. A batch
+  needs three approvals for the whole collection, plus one per 20 items with
+  `--verify-creators`.
 - `--signer readonly`: no signer, for commands that only read.
 
 Every fee is paid on chain to Solana and to storage; the toolkit takes no fee.
@@ -46,12 +50,13 @@ Every fee is paid on chain to Solana and to storage; the toolkit takes no fee.
 agents. Install with:
 
 ```bash
-npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.3.2/skills/solana-nft-creation
+npx skills add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.4.0/skills/solana-nft-creation
 ```
 
 The skill works from plain language: describe the result, approve the signatures
 in your wallet, and it creates the collection, uploads to Arweave, mints,
-verifies and reports the addresses. It runs on devnet or mainnet and signs
+verifies and reports the addresses. It mints one item or a whole collection from
+a manifest, runs on devnet or mainnet (devnet first is recommended), and signs
 through Phantom, Solflare or Backpack.
 
 Verify discovery without installing:
@@ -64,6 +69,11 @@ The skill drives the CLI above; clone the pinned toolkit first. Example prompt:
 
 > Create a collection called "Lil Turtles" with symbol LIL and a 5% royalty on
 > devnet, then mint one item and confirm it is verified on chain.
+
+Or for a folder of art:
+
+> Mint the whole collection in `abstract-lil-turtles/collection.json` on devnet.
+> Show me the addresses, then tell me what a mainnet run would cost.
 
 See "Install the skill" at the top of the README.
 
@@ -81,6 +91,10 @@ See "Install the skill" at the top of the README.
 
 - Token Metadata limits: name ≤ 32 bytes, symbol ≤ 10, URI ≤ 200.
 - Always verify collection membership and re-fetch the asset after a mint.
+- For a whole collection, use `create:batch` and run it on devnet first; it
+  refuses mainnet without `--mainnet`.
+- Batch verification uses `delegateCollectionV1` and `revokeCollectionV1` with
+  `MetadataDelegateRole.Collection`, not the legacy `approveCollectionAuthority`.
 - Upload the image before the metadata JSON.
 - Never set `isMutable: false` before metadata is final.
 - Never handle seed phrases. Use a keypair file, `--signer browser`, or a wallet
