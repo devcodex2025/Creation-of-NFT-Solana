@@ -136,11 +136,16 @@ Fixes:
   before this audit. That run exercised the bridge, the temporary key, the
   delegation, the sweep, and the revocation with a real extension.
 - `npm audit` now reports 0 critical and 0 high findings.
+- GitHub Actions: run `43647919047` passed on the release commit; run
+  `43648375649` passed every step after the workflow gained the label, bridge,
+  security and audit checks.
 
 ## Limitations
 
-- GitHub Actions is still blocked by the account's billing lock, so CI did not
-  run these changes. All checks above were run locally.
+- CI now runs the same checks on every push and pull request: typecheck, labels,
+  bridge, security, and `npm audit --audit-level=high`. Run `43647919047` passed
+  on the release commit and run `43648375649` passed with the expanded workflow.
+  The earlier billing lock is resolved.
 - Real Phantom/Solflare extensions cannot be driven by the automated tests. The
   bridge is covered by a scripted Wallet Standard wallet; the live run is the
   real-extension evidence.
