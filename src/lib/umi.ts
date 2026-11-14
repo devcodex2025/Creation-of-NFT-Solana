@@ -24,6 +24,10 @@ import * as path from "node:path";
 import { cluster, connection } from "./config";
 import { loadSecretKey, repoRoot } from "./keypair";
 import { connectBrowserWallet, type BrowserWallet, type RequestContext } from "./browser-bridge";
+import { describeTransaction, type BrowserAction } from "./approval";
+
+export type { BrowserAction } from "./approval";
+export { describeTransaction } from "./approval";
 
 export type StorageBackend = "irys" | "local";
 
@@ -83,97 +87,21 @@ function createLocalUploader(): UploaderInterface {
   };
 }
 
-const METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
-const SYSTEM_PROGRAM_ID = "11111111111111111111111111111111";
-
-export type BrowserAction =
-  | "collection"
-  | "nft"
-  | "update"
-  | "verify"
-  | "batch"
-  | "transaction";
-
-export function describeTransaction(
-  transaction: UmiTransaction,
-  action: BrowserAction,
-): RequestContext {
-  // Delegation changes are the point of the batch approval, so they are named
-  // before the create instruction that shares the same transaction.
-  for (const instruction of transaction.message.instructions) {
-    const programId = transaction.message.accounts[instruction.programIndex];
-    if (programId !== METADATA_PROGRAM_ID) continue;
-    const data = instruction.data;
-    if (data[0] === 44) {
-      return {
-        label: "Approve collection delegation",
-        detail: "Lets the temporary batch key verify items in this collection.",
-      };
-    }
-    if (data[0] === 45) {
-      return {
-        label: "Revoke collection delegation",
-        detail: "Removes the temporary batch key's permission.",
-      };
+/** Prints the same facts the browser page shows, so the terminal and the
+ * wallet prompt cannot disagree. */
+function printApproval(context: RequestContext): void {
+  console.log(`\n   Approval: ${context.label}`);
+  for (const fact of context.facts ?? []) {
+    console.log(`     ${`${fact.label}:`.padEnd(13)} ${fact.value}`);
+  }
+  if (context.operations && context.operations.length > 0) {
+    console.log("     Operations:");
+    for (const operation of context.operations) {
+      console.log(`       - ${operation}`);
     }
   }
-
-  for (const instruction of transaction.message.instructions) {
-    const programId = transaction.message.accounts[instruction.programIndex];
-    if (programId !== METADATA_PROGRAM_ID) continue;
-    const data = instruction.data;
-    if (data[0] === 52 && data[1] === 1) {
-      return {
-        label: "Approve collection verification",
-        detail: "Marks the NFT as a verified member of its collection on chain.",
-      };
-    }
-    if (data[0] === 52 && data[1] === 0) {
-      return {
-        label: "Approve creator verification",
-        detail: "Marks the wallet as a verified creator of these NFTs.",
-      };
-    }
-    if (data[0] === 42) {
-      return action === "collection"
-        ? {
-            label: "Approve collection creation",
-            detail: "Creates the collection NFT and its metadata account.",
-          }
-        : {
-            label: "Approve NFT mint",
-            detail: "Creates the NFT and its metadata account.",
-          };
-    }
-  }
-  for (const instruction of transaction.message.instructions) {
-    const programId = transaction.message.accounts[instruction.programIndex];
-    if (programId !== SYSTEM_PROGRAM_ID) continue;
-    const data = instruction.data;
-    if (data[0] === 2 && data[1] === 0 && data[2] === 0 && data[3] === 0) {
-      if (action === "batch") {
-        return {
-          label: "Approve batch funding",
-          detail: "Sends SOL to the temporary batch key for rent and uploads.",
-        };
-      }
-      return {
-        label: "Approve storage payment",
-        detail: "Pays Irys for the Arweave upload.",
-      };
-    }
-  }
-  if (action === "update") {
-    return {
-      label: "Approve metadata update",
-      detail: "Writes the new metadata to the NFT.",
-    };
-  }
-  return {
-    label: "Approve transaction",
-    detail: "Signs a Solana transaction built by the CLI.",
-  };
 }
+
 /**
  * Signs through the browser bridge. Umi passes the transaction, the wallet
  * signs the serialized bytes, and the signed transaction comes back with all
@@ -186,11 +114,15 @@ function createBrowserSigner(
   const signTransaction = async (
     transaction: UmiTransaction,
   ): Promise<UmiTransaction> => {
-    const bytes = toWeb3JsTransaction(transaction).serialize();
-    const signedBytes = await wallet.signTransaction(
-      bytes,
-      describeTransaction(transaction, action),
+    const web3 = toWeb3JsTransaction(transaction);
+    const bytes = web3.serialize();
+    const context = describeTransaction(
+      transaction,
+      action,
+      web3.message.header.numRequiredSignatures,
     );
+    printApproval(context);
+    const signedBytes = await wallet.signTransaction(bytes, context);
     return fromWeb3JsTransaction(VersionedTransaction.deserialize(signedBytes));
   };
 
@@ -200,6 +132,12 @@ function createBrowserSigner(
       wallet.signMessage(message, {
         label: "Approve upload signature",
         detail: "Signs the Arweave upload so this file can be stored.",
+        facts: [
+          {
+            label: "Payload",
+            value: "Upload signature only. No transaction, no fee.",
+          },
+        ],
       }),
     signTransaction,
     signAllTransactions: async (transactions) => {
@@ -233,9 +171,9 @@ export async function createProjectUmi(
     // Reads do not need a real wallet; a throwaway signer keeps umi happy.
     umi.use(signerIdentity(generateSigner(umi)));
   } else {
-    const umiKeypair = umi.eddsa.createKeypairFromSecretKey(
-      loadSecretKey(options.keypairPath),
-    );
+    const secret = loadSecretKey(options.keypairPath);
+    const umiKeypair = umi.eddsa.createKeypairFromSecretKey(secret);
+    secret.fill(0);
     umi.use(keypairIdentity(umiKeypair));
   }
 

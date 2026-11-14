@@ -23,6 +23,28 @@ function tx(programIds: string[], datas: number[][]): UmiTransaction {
   } as unknown as UmiTransaction;
 }
 
+function txWithAccounts(
+  accounts: string[],
+  programIndex: number,
+  accountIndexes: number[],
+  data: number[],
+): UmiTransaction {
+  return {
+    message: {
+      instructions: [{ programIndex, accountIndexes, data: Uint8Array.from(data) }],
+      accounts,
+    },
+  } as unknown as UmiTransaction;
+}
+
+function lamports(value: bigint): number[] {
+  const bytes = new Array<number>(8).fill(0);
+  for (let i = 0; i < 8; i += 1) {
+    bytes[i] = Number((value >> BigInt(8 * i)) & 0xffn);
+  }
+  return bytes;
+}
+
 const failures: string[] = [];
 
 function check(name: string, actual: string, expected: string): void {
@@ -108,6 +130,52 @@ check(
   "revoking delegation",
   describeTransaction(tx([METADATA], [[45, 0]]), "batch").label ?? "",
   "Revoke collection delegation",
+);
+
+const RECIPIENT = "6fFX4ZSTPMEDiizZwEhqcff7beBZDTs338Bk1TbAgEiR";
+const funding = txWithAccounts(
+  ["FHL1oz55LDXcaovK4f2XYBLcHWFiqvwgB9gAEYzjFYG7", RECIPIENT, SYSTEM],
+  2,
+  [0, 1],
+  [2, 0, 0, 0, ...lamports(500_000_000n)],
+);
+const fundingContext = describeTransaction(funding, "batch", 1);
+check(
+  "funding shows the recipient",
+  fundingContext.facts?.find((fact) => fact.label === "Recipient")?.value ?? "",
+  RECIPIENT,
+);
+check(
+  "funding shows the amount",
+  fundingContext.facts?.find((fact) => fact.label === "Amount")?.value ?? "",
+  "0.5 SOL",
+);
+check(
+  "funding shows the base fee",
+  fundingContext.facts?.find((fact) => fact.label === "Network fee")?.value ?? "",
+  "~0.000005 SOL (1 signature)",
+);
+check(
+  "funding lists the transfer operation",
+  fundingContext.operations?.[0] ?? "",
+  `Transfer 0.5 SOL to ${RECIPIENT}`,
+);
+
+const unknownProgram = describeTransaction(
+  tx(["UnknownProgram111111111111111111111111111111"], [[0]]),
+  "nft",
+);
+check(
+  "unknown program is named in the warning",
+  unknownProgram.detail?.includes("UnknownProgram111111111111111111111111111111")
+    ? "yes"
+    : "no",
+  "yes",
+);
+check(
+  "unknown program is listed as an operation",
+  unknownProgram.operations?.[0] ?? "",
+  "Call program UnknownProgram111111111111111111111111111111",
 );
 
 if (failures.length > 0) {

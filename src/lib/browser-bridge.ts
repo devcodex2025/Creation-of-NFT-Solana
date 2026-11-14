@@ -15,9 +15,17 @@ import { cluster } from "./config";
  * single pending request, three minute timeout, server closed when done.
  */
 
+/** A labelled value shown to the user before they sign. */
+export interface ApprovalFact {
+  label: string;
+  value: string;
+}
+
 export interface RequestContext {
   label?: string;
   detail?: string;
+  facts?: ApprovalFact[];
+  operations?: string[];
 }
 
 export interface BrowserWallet {
@@ -33,6 +41,8 @@ interface PendingRequest {
   payload: string;
   label: string;
   detail: string;
+  facts: ApprovalFact[];
+  operations: string[];
   resolve: (bytes: Uint8Array) => void;
   reject: (error: Error) => void;
 }
@@ -167,6 +177,8 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
         payload: pending.payload,
         label: pending.label,
         detail: pending.detail,
+        facts: pending.facts,
+        operations: pending.operations,
       });
       return;
     }
@@ -247,6 +259,8 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
               context?.label ??
               (kind === "message" ? "Approve signature" : "Approve transaction"),
             detail: context?.detail ?? "",
+            facts: context?.facts ?? [],
+            operations: context?.operations ?? [],
             resolve: (bytes) => {
               clearTimeout(timer);
               resolve(bytes);
@@ -456,6 +470,17 @@ function renderPage(token: string, defaultChain: string): string {
   .request .kicker { margin: 0 0 4px; color: var(--muted); font-size: 12px; }
   .request h2 { margin: 0 0 4px; font-size: 16px; line-height: 1.35; }
   .request p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  dl.facts {
+    margin: 10px 0 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 12px;
+    font-size: 13px;
+  }
+  dl.facts dt { color: var(--muted); }
+  dl.facts dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  ul.ops { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+  ul.ops li { margin: 2px 0; overflow-wrap: anywhere; }
   ul.wallets { list-style: none; margin: 0 0 16px; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   ul.wallets li + li { border-top: 1px solid var(--line); }
   button { font: inherit; cursor: pointer; }
@@ -527,6 +552,8 @@ function renderPage(token: string, defaultChain: string): string {
     <p class="kicker" id="request-count"></p>
     <h2 id="request-title"></h2>
     <p id="request-detail"></p>
+    <dl id="request-facts" class="facts" hidden></dl>
+    <ul id="request-ops" class="ops" hidden></ul>
   </section>
   <p id="status" role="status" aria-live="polite">Looking for a wallet.</p>
 </main>
@@ -546,6 +573,8 @@ function renderPage(token: string, defaultChain: string): string {
   var requestCountEl = document.getElementById("request-count");
   var requestTitleEl = document.getElementById("request-title");
   var requestDetailEl = document.getElementById("request-detail");
+  var requestFactsEl = document.getElementById("request-facts");
+  var requestOpsEl = document.getElementById("request-ops");
   var account = null;
   var wallet = null;
   var chain = defaultChain;
@@ -562,6 +591,34 @@ function renderPage(token: string, defaultChain: string): string {
 
   function show(element, visible) {
     element.hidden = !visible;
+  }
+
+  // Facts and operations are rendered with textContent, never innerHTML: the
+  // values come from decoded transaction bytes and are untrusted by definition.
+  function renderDetails(facts, operations) {
+    requestFactsEl.textContent = "";
+    requestOpsEl.textContent = "";
+    var hasFacts = Boolean(facts && facts.length);
+    if (hasFacts) {
+      for (var i = 0; i < facts.length; i++) {
+        var dt = document.createElement("dt");
+        dt.textContent = String(facts[i].label || "");
+        var dd = document.createElement("dd");
+        dd.textContent = String(facts[i].value || "");
+        requestFactsEl.appendChild(dt);
+        requestFactsEl.appendChild(dd);
+      }
+    }
+    show(requestFactsEl, hasFacts);
+    var hasOps = Boolean(operations && operations.length);
+    if (hasOps) {
+      for (var j = 0; j < operations.length; j++) {
+        var li = document.createElement("li");
+        li.textContent = String(operations[j] || "");
+        requestOpsEl.appendChild(li);
+      }
+    }
+    show(requestOpsEl, hasOps);
   }
 
   function errorText(error) {
@@ -789,6 +846,7 @@ function renderPage(token: string, defaultChain: string): string {
         requestTitleEl.textContent = label;
         requestDetailEl.textContent = job.detail || "";
         show(requestDetailEl, Boolean(job.detail));
+        renderDetails(job.facts, job.operations);
         show(requestEl, true);
         setStatus("Waiting for approval. Check your wallet.");
         try {
