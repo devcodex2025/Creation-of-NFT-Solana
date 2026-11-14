@@ -252,6 +252,41 @@ see the flag yourself.
 An earlier single-item example is still live at
 [`4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX`](https://explorer.solana.com/address/4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX?cluster=devnet).
 
+## Examples
+
+Six of the 24 items above, straight from the devnet run. Click one to open it in Explorer.
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://explorer.solana.com/address/8tCNfM6q4WUNXFN5qpu73LbkmQt4fADGv4BNE5Wnz8Lq?cluster=devnet"><img src="assets/examples/01.webp" width="240" alt="Lil Turtle #1, Cerulean Blue with a mohawk"></a><br>
+      <sub><b>Lil Turtle #1</b><br>Cerulean Blue, mohawk</sub>
+    </td>
+    <td align="center">
+      <a href="https://explorer.solana.com/address/EQCUjsWexEXCVXBnWuHtYQ8bDHxsG31mZQAbe2gFLy5H?cluster=devnet"><img src="assets/examples/02.webp" width="240" alt="Lil Turtle #5, Coral Red with a magic hat"></a><br>
+      <sub><b>Lil Turtle #5</b><br>Coral Red, magic hat</sub>
+    </td>
+    <td align="center">
+      <a href="https://explorer.solana.com/address/EW2EXN7s6annyifnVo9DsDoJY5643C9WrESpBjqQMdjh?cluster=devnet"><img src="assets/examples/03.webp" width="240" alt="Lil Turtle #9, Coral Red with a magic hat and sunglasses"></a><br>
+      <sub><b>Lil Turtle #9</b><br>Coral Red, magic hat and sunglasses</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://explorer.solana.com/address/EBp6J1eE8UnnDxiAJpRSRWFQVkJ9EEG3Nag8uEw5Q9mr?cluster=devnet"><img src="assets/examples/04.webp" width="240" alt="Lil Turtle #13, Coral Red with a top hat"></a><br>
+      <sub><b>Lil Turtle #13</b><br>Coral Red, top hat</sub>
+    </td>
+    <td align="center">
+      <a href="https://explorer.solana.com/address/5yJ3kri4Tn9NGQy6aRp5H3pK35DEkVtS6oRQd7aJYcR1?cluster=devnet"><img src="assets/examples/05.webp" width="240" alt="Lil Turtle #17, Cerise Red with sunglasses"></a><br>
+      <sub><b>Lil Turtle #17</b><br>Cerise Red, sunglasses</sub>
+    </td>
+    <td align="center">
+      <a href="https://explorer.solana.com/address/DCMQde828sxPPPSwg7aWsuvya371e1vG6mCKN2DcTkRY?cluster=devnet"><img src="assets/examples/06.webp" width="240" alt="Lil Turtle #21, Slate Gray with a bowler hat"></a><br>
+      <sub><b>Lil Turtle #21</b><br>Slate Gray, bowler hat</sub>
+    </td>
+  </tr>
+</table>
+
 ## Commands
 
 | Command | What it does |
