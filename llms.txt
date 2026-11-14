@@ -80,6 +80,7 @@ See "Install the skill" at the top of the README.
 ## Docs
 
 - [README](README.md)
+- [Examples](README.md#examples) — six of the 24 items minted on devnet, with Explorer links
 - [Architecture](docs/ARCHITECTURE.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Metadata standard](skills/solana-nft-creation/references/metadata-standard.md)
