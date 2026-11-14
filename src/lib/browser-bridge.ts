@@ -54,6 +54,7 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
   let closed = false;
   let finished = false;
   let queue: Promise<unknown> = Promise.resolve();
+  let connectionTimer: ReturnType<typeof setTimeout> | undefined;
 
   let resolveConnected!: (publicKey: string) => void;
   let rejectConnected!: (error: Error) => void;
@@ -77,7 +78,7 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
   const origin = `http://127.0.0.1:${port}`;
   const url = `${origin}/?token=${token}`;
 
-  const timer = setTimeout(() => {
+  connectionTimer = setTimeout(() => {
     rejectConnected(
       new Error("Wallet connection timed out after 3 minutes. Run the command again."),
     );
@@ -87,7 +88,7 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
   function shutdown(): void {
     if (closed) return;
     closed = true;
-    clearTimeout(timer);
+    clearTimeout(connectionTimer);
     if (pending) {
       pending.reject(new Error("Wallet bridge closed before the request was signed."));
       pending = null;
@@ -179,6 +180,7 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
           sendJson(res, 400, { error: "publicKey is required" });
           return;
         }
+        clearTimeout(connectionTimer);
         resolveConnected(body.publicKey);
         sendJson(res, 200, { ok: true });
         return;
@@ -225,6 +227,15 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
       () =>
         new Promise<Uint8Array>((resolve, reject) => {
           const id = randomBytes(8).toString("hex");
+          const timer = setTimeout(() => {
+            if (pending?.id !== id) return;
+            pending = null;
+            reject(
+              new Error(
+                "The wallet did not sign within 3 minutes. Run the command again.",
+              ),
+            );
+          }, TIMEOUT_MS);
           pending = {
             id,
             kind,
@@ -233,8 +244,14 @@ export async function connectBrowserWallet(): Promise<BrowserWallet> {
               context?.label ??
               (kind === "message" ? "Approve signature" : "Approve transaction"),
             detail: context?.detail ?? "",
-            resolve,
-            reject,
+            resolve: (bytes) => {
+              clearTimeout(timer);
+              resolve(bytes);
+            },
+            reject: (error) => {
+              clearTimeout(timer);
+              reject(error);
+            },
           };
         }),
     );

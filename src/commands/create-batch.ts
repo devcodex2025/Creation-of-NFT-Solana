@@ -830,6 +830,11 @@ async function main(): Promise<void> {
       minted += 1;
       console.log(`   Mint      : ${mint.publicKey}`);
       console.log(`   Explorer  : ${explorerAddressUrl(mint.publicKey)}`);
+      // Public devnet RPC rate-limits bursts. A short gap keeps a 24 item run
+      // under the limit; `sendAndConfirm` retries anything that still gets 429.
+      if (index < pending.length) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
     }
 
     // Read one mint back so the run ends on chain state, not on a log line.
