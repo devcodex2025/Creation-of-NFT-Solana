@@ -4,7 +4,7 @@ description: Create a Solana NFT or a whole collection, from art and metadata wi
 license: MIT
 metadata:
   author: devcodex2025
-  version: "2.5.0"
+  version: "2.6.0"
   homepage: https://github.com/devcodex2025/Creation-of-NFT-Solana
 ---
 
@@ -417,12 +417,14 @@ Read the source before running it. Every command is one file under
 This skill is maintained alongside a working TypeScript toolkit:
 
 ```bash
-git clone --branch v2.5.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.6.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
-cp .env.example .env
 npm run keypair
 ```
+
+The defaults target devnet. Copy `.env.example` to `.env` only to override the
+cluster, RPC endpoint or storage settings.
 
 | Command | Purpose |
 |---|---|
@@ -447,7 +449,7 @@ supports devnet, mainnet and a local validator. Install it as a skill from the
 pinned release:
 
 ```bash
-npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.5.0/skills/solana-nft-creation
+npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.6.0/skills/solana-nft-creation
 ```
 
 ## References

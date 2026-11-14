@@ -301,5 +301,5 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
 }
 ```
 
-Retry only idempotent reads and transaction sends with a fresh blockhash. Do
-not retry a mint without checking whether the first attempt landed.
+Retry only idempotent reads and transaction sends with a fresh blockhash.
+Before retrying a mint, confirm whether the first attempt landed.

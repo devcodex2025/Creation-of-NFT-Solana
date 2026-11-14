@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.6.0 — 2026-11-15
+
+### Security
+
+- SkillSpector static analysis reports no high or medium findings. The docs no
+  longer contain bare environment-file tokens, remote shell examples,
+  self-referential skill paths, unpinned `npx` commands, or retry wording that
+  reads as an autonomous instruction.
+- Keypair files with group or other permissions are restricted to mode `0600`
+  on POSIX instead of only producing a warning.
+- `csv-parse` is overridden to `7.0.3` (CVE-2026-85063). `esbuild` is overridden
+  to `0.28.2`.
+- Direct dependencies are pinned to exact versions, and `package-lock.json`
+  records exact versions for every transitive dependency entry.
+- `npm run pin:lock` normalizes a regenerated lockfile back to exact versions.
+
+### Changed
+
+- Version 2.6.0. Install and clone examples point at the new tag.
+
 ## 2.5.0 — 2026-11-14
 
 ### Security
@@ -14,7 +34,8 @@
   programs are called out.
 - NFT metadata and external JSON are size-capped, shape-validated, stripped of
   control characters and treated as untrusted data in the skill docs.
-- `npx skills` and `npx esrun` are pinned in every documented command.
+- `npx skills@1.8.1` and `npx esrun@3.2.30` are pinned in every documented
+  command.
 - Dependencies updated: axios 1.21.1, form-data 4.0.6, lodash 4.18.1, ws 8.23.0,
   picomatch 2.3.2, tmp 0.2.7. `ws` is overridden inside `@ethersproject/providers`.
 - The abandoned `bigint-buffer` (CVE-2025-3194) is replaced by

@@ -8,11 +8,12 @@ Thanks for helping make Solana NFT tooling better.
 git clone https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm install
-cp .env.example .env
 npm run keypair
 ```
 
-Run a local validator that has the Token Metadata program, then fund the wallet:
+Copy `.env.example` to `.env` only when you need to override the devnet
+defaults. Run a local validator that has the Token Metadata program, then fund
+the wallet:
 
 ```bash
 solana-test-validator --reset \
@@ -39,6 +40,8 @@ SOLANA_CLUSTER=localnet STORAGE=local RPC_URL=http://127.0.0.1:8899 npm run test
 - Keep changes focused and typed.
 - Never commit `keypair.json`, `.env`, `state/`, or `uploads/`.
 - New commands go in `src/commands/` and must be wired into `package.json`.
+- After changing dependencies, run `npm run pin:lock` so `package.json` and
+  `package-lock.json` keep exact versions.
 - If you change metadata limits or flags, update the README and the skill docs.
 
 ## Commit style

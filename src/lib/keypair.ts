@@ -34,17 +34,18 @@ export const solanaCliKeypairPath = path.join(
 );
 
 /**
- * Warns when a keypair file is readable by other local users. Windows does not
- * expose POSIX mode bits, so the check only runs where they mean something.
+ * Restricts a keypair file to its owner when POSIX mode bits are available.
+ * Windows does not expose those bits, so the check runs only where they mean
+ * something.
  */
-function warnIfGroupOrWorldReadable(resolved: string): void {
+function enforceOwnerOnlyPermissions(resolved: string): void {
   if (process.platform === "win32") return;
   try {
     const mode = statSync(resolved).mode & 0o777;
     if ((mode & 0o077) !== 0) {
+      chmodSync(resolved, 0o600);
       console.warn(
-        `Warning: ${resolved} has mode ${mode.toString(8)} and is readable by other users. ` +
-          `Run: chmod 600 ${resolved}`,
+        `Warning: ${resolved} was readable by other local users; restricted it to mode 600.`,
       );
     }
   } catch {
@@ -87,7 +88,7 @@ export function resolveKeypairPath(explicit?: string): string {
 
 export function loadSecretKey(keypairPath?: string): Uint8Array {
   const resolved = resolveKeypairPath(keypairPath);
-  warnIfGroupOrWorldReadable(resolved);
+  enforceOwnerOnlyPermissions(resolved);
   const raw = readFileSync(resolved, "utf8");
 
   let parsed: unknown;

@@ -51,7 +51,7 @@ function warnIfFlagsWereSwallowed(flags: Flags, argv: string[]): void {
       "⚠️  No --flags reached this script, so defaults are in use.",
       "   Windows PowerShell 7 + npm 11 strips --flags from `npm run`.",
       "   Add an extra separator:  npm run <script> -- -- --name \"...\"",
-      "   Or call the script directly:  npx esrun src/commands/<file>.ts --name \"...\"",
+      "   Or call the script directly:  npx esrun@3.2.30 src/commands/<file>.ts --name \"...\"",
       "",
     ].join("\n"),
   );

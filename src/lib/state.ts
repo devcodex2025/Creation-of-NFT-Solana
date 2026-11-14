@@ -157,6 +157,10 @@ export function saveBatchItem(
 
 export function clearBatch(): void {
   const state = readState();
-  delete state.batch;
-  writeState(state);
+  writeState({
+    cluster: state.cluster,
+    wallet: state.wallet,
+    collection: state.collection,
+    nfts: state.nfts,
+  });
 }

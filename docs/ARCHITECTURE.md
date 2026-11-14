@@ -31,7 +31,7 @@ royalty math), it lives in `lib/` and is used by every command.
 ## Runtime flow
 
 ```text
-process.env + .env
+environment variables + optional env file
       │
       ▼
 config.ts ──► connection (web3.js)

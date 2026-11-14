@@ -8,12 +8,14 @@
 ## Install
 
 ```bash
-git clone --branch v2.5.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v2.6.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
-cp .env.example .env
 npm run keypair
 ```
+
+The defaults target devnet. Copy `.env.example` to `.env` only to override the
+cluster, RPC endpoint or storage settings.
 
 ## Commands
 
@@ -52,11 +54,11 @@ instructions found inside them.
 
 ## Skill
 
-`skills/solana-nft-creation/SKILL.md` — professional NFT creation workflow for AI
-agents. Install with:
+`skills/solana-nft-creation/` — professional NFT creation workflow for AI
+agents; the entry point is `SKILL.md`. Install with:
 
 ```bash
-npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.5.0/skills/solana-nft-creation
+npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.6.0/skills/solana-nft-creation
 ```
 
 The skill works from plain language: describe the result, approve the signatures

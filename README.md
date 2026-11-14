@@ -8,7 +8,7 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![Solana](https://img.shields.io/badge/Solana-devnet%20%7C%20mainnet-9945FF?logo=solana&logoColor=white)](https://solana.com)
 [![Metaplex](https://img.shields.io/badge/Metaplex-Token%20Metadata-000000)](https://developers.metaplex.com/token-metadata)
-[![AI Agent Skill](https://img.shields.io/badge/AI%20agent-skill-8A2BE2)](skills/solana-nft-creation/SKILL.md)
+[![AI Agent Skill](https://img.shields.io/badge/AI%20agent-skill-8A2BE2)](skills/solana-nft-creation/)
 
 <img src="assets/lil_turtle_collection.webp" alt="Lil Turtle collection artwork" width="420" />
 
@@ -19,7 +19,7 @@ Solana. It replaces the usual copy-paste tutorial scripts with commands that
 keep state, validate Metaplex limits, verify collections, and work on devnet,
 mainnet and a local validator.
 
-It also ships an [agent skill](skills/solana-nft-creation/SKILL.md) so AI coding
+It also ships an [agent skill](skills/solana-nft-creation/) so AI coding
 agents can do the whole workflow correctly.
 
 ## What the skill does
@@ -42,7 +42,7 @@ and Explorer links.
 ## Install the skill
 
 ```bash
-npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.5.0/skills/solana-nft-creation
+npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.6.0/skills/solana-nft-creation
 ```
 
 Restart the agent so it reloads its skill list.
@@ -50,9 +50,12 @@ Restart the agent so it reloads its skill list.
 The skill drives the toolkit in this repository. Clone it once:
 
 ```bash
-git clone --branch v2.5.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
-cd Creation-of-NFT-Solana && npm ci && cp .env.example .env
+git clone --branch v2.6.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+cd Creation-of-NFT-Solana && npm ci
 ```
+
+The defaults target devnet. Copy `.env.example` to `.env` only if you need to
+override the cluster, RPC endpoint or storage settings.
 
 Ask your agent for the result, not the steps:
 
@@ -634,7 +637,7 @@ does not have Token Metadata cloned you will see
 The wallet-free checks run anywhere:
 
 ```bash
-npx tsc --noEmit
+npm run typecheck
 npm run test:labels     # request labels, recipient, amount, fee, operations
 npm run test:bridge     # loopback, token, Host, timeout, shutdown
 npm run test:security   # bigint shim and untrusted-metadata sanitizer
@@ -651,7 +654,7 @@ collection before: token standard choice, metadata within the byte limits,
 Arweave storage, verification, royalties, updates, authority handoff, launch
 checks and error handling.
 
-- [SKILL.md](skills/solana-nft-creation/SKILL.md)
+- [Skill entry point](skills/solana-nft-creation/)
 - [Metadata standard](skills/solana-nft-creation/references/metadata-standard.md)
 - [Collection verification](skills/solana-nft-creation/references/collections.md)
 - [Storage](skills/solana-nft-creation/references/storage.md)

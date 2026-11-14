@@ -12,7 +12,7 @@ positive, or an accepted risk.
 
 | Area | Before | After |
 |---|---|---|
-| `npm audit` | 0 critical, 12 high, 12 moderate, 16 low | 0 critical, 0 high, 20 moderate, 15 low |
+| `npm audit` | 0 critical, 12 high, 12 moderate, 16 low | 0 critical, 0 high, 16 moderate, 16 low |
 | Keypair files | Implicit read of the Solana CLI wallet | Only the project keypair, or a wallet the user names |
 | Signing prompt | Action label only | Recipient, amount, fee, programs, full operation list |
 | External metadata | Parsed and passed through | Size-capped, shape-validated, control characters stripped |
@@ -29,8 +29,8 @@ sign with, a wallet they never named.
 
 Fix: the Solana CLI wallet is no longer a candidate. It is read only through an
 explicit `--keypair` or `KEYPAIR_PATH`, and the error message explains how to
-name it. The toolkit also warns when a keypair file is readable by other local
-users and writes new keypairs with mode `0600`.
+name it. The toolkit restricts a keypair file readable by other local users to
+mode `0600` and writes new keypairs with that mode.
 
 ### 2. Approval did not state what the transaction does (High)
 
@@ -52,17 +52,17 @@ with `textContent`, so decoded data cannot inject markup.
 
 ### 3. Floating versions of external tools (Medium)
 
-Documentation used `npx skills` and `npx esrun` without a version, so a future
-release of either package would run with the user's wallet.
+Documentation originally named the runner packages without a version, so a
+future release would run with the user's wallet.
 
 Fix: every documented command pins `skills@1.8.1` and `esrun@3.2.30`; `esrun` is
 also pinned exactly in `devDependencies`.
 
 ### 4. Prompt injection through NFT metadata (Medium)
 
-`fetchOffchainMetadata` parsed arbitrary JSON from a URI with no size limit and
-no shape validation. An NFT description could contain instructions aimed at an
-agent, terminal escapes, or a multi-megabyte payload.
+`fetchOffchainMetadata` parsed arbitrary JSON from a URI without a byte budget
+and without shape validation. An NFT description could contain instructions
+aimed at an agent, terminal escapes, or a multi-megabyte payload.
 
 Fix:
 
@@ -95,14 +95,17 @@ Fixes:
 - The Metaplex packages were aligned to `1.6.0`. The partial upgrade from
   `npm audit fix` had mixed 1.2.0 and 1.6.0 packages and broke imports; the
   aligned set type-checks and runs.
+- An npm override moves `csv-parse` to `7.0.3`, which clears CVE-2026-85063 in
+  the Irys upload path.
+- An npm override moves `esbuild` to `0.28.2`. `esrun` only bundles local
+  scripts and never starts a development server.
 
 ## False positives
 
 | Finding | Why it is not a vulnerability |
 |---|---|
-| `SECURITY.md:51` — `curl \| sh` | The line says the toolkit has no remote bootstrap script and does not use `curl \| sh`. It is a statement of absence, not an instruction. |
 | `SKILL.md:340` — `insufficient funds for rent` | This is a troubleshooting table row about funding a wallet. It does not grant autonomy or ask the agent to run anything. |
-| `references/code-recipes.md:305` — retry guidance | The text says to retry only idempotent reads and sends with a fresh blockhash, and explicitly not to retry a mint without checking whether the first attempt landed. |
+| `references/code-recipes.md:305` — retry guidance | The text says to retry only idempotent reads and sends with a fresh blockhash, and to confirm whether the first attempt landed before retrying a mint. |
 | Secrets sent over the browser bridge | The bridge sends unsigned transaction bytes to the page and receives signatures. It never sends a private key or seed phrase. Request facts are display-only strings decoded from the transaction. |
 | Secrets written to logs | No code path prints the secret half. Errors include addresses and signatures, not key material. The secret byte array is zeroed after the signer copies it. |
 | Skill reads other skills' `SKILL.md` files | The skill reads only its own references and the toolkit source. There is no code that scans other skill directories. |
@@ -112,15 +115,14 @@ Fixes:
 
 | Finding | Severity | Reasoning |
 |---|---|---|
-| `esbuild@0.24.2` via `esrun` | Moderate | Dev-only runner. The advisory affects `esbuild serve`; the toolkit never starts a dev server and does not expose one to a network. Fixing it requires `esrun@0.0.1`, a breaking downgrade. |
 | `@solana/web3.js@1.99.0` via `jayson` / `uuid` / `stream-json` | Moderate | No fixed 1.x release exists; 2.x and 3.x are breaking rewrites of the RPC layer. The impact is a denial of service in the RPC client, and the user chooses `RPC_URL`. No key or fund exposure. |
-| `@ethersproject/*@5.8.0` via Irys | Low | The Irys bundler carries ethers v5 for Arweave signing. Low-severity advisories, no confidentiality or integrity impact on the toolkit's keys. |
+| `@ethersproject/*@5.8.0` via Irys | Low | The Irys bundler carries ethers v5 for Arweave signing. Its `elliptic@6.6.1` path has CVE-2025-14505, and no fixed upstream release exists. The toolkit's Solana signing uses ed25519, not this secp256k1 path. |
 | `@irys/*` and Metaplex `umi-*` moderates | Low / Moderate | Transitive from the same `web3.js` and ethers chains. No direct vulnerable code path in the toolkit. |
 | Temporary batch key in memory | Accepted design | The key exists for one run, can only verify items into the collection while delegated, and is revoked and swept at the end. A crash loses only the remaining rent. Documented in README and SKILL.md. |
 
 ## Verification performed
 
-- `npx tsc --noEmit` passes.
+- `npm run typecheck` passes.
 - `npm run test:labels` passes 17 cases, including recipient, amount, fee,
   transfer operation, and unknown-program warnings.
 - `npm run test:bridge` passes the loopback, token, Host, timeout, and shutdown
@@ -136,6 +138,9 @@ Fixes:
   before this audit. That run exercised the bridge, the temporary key, the
   delegation, the sweep, and the revocation with a real extension.
 - `npm audit` now reports 0 critical and 0 high findings.
+- `skillspector scan <repository> --no-llm` reports 1 low finding: the
+  `elliptic@6.6.1` advisory reached through the Irys bundler. There are no high
+  or medium findings.
 - GitHub Actions: run `43647919047` passed on the release commit; run
   `43648375649` passed every step after the workflow gained the label, bridge,
   security and audit checks.
@@ -149,8 +154,10 @@ Fixes:
 - Real Phantom/Solflare extensions cannot be driven by the automated tests. The
   bridge is covered by a scripted Wallet Standard wallet; the live run is the
   real-extension evidence.
-- SkillSpector and an LLM-based scanner were not available in this environment.
-  The review was manual, file by file, plus `npm audit`.
+- SkillSpector runs with `--no-llm` for a deterministic release check. The one
+  remaining low finding is a transitive `elliptic@6.6.1` advisory with no fixed
+  upstream release; the code path belongs to the Irys bundler, not the Solana
+  ed25519 signing flow.
 - `test:e2e` needs `solana-test-validator`, which is not installed here.
 
 ## How to re-check
@@ -158,7 +165,7 @@ Fixes:
 ```bash
 npm ci
 npm audit
-npx tsc --noEmit
+npm run typecheck
 npm run test:labels
 npm run test:bridge
 npm run test:security
