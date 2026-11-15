@@ -679,7 +679,10 @@ More: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
   `vendor/bigint-buffer`, so CVE-2025-3194 is not reachable.
 - NVIDIA SkillSpector v2.12.0 scans the installable skill at **0/100 (LOW, 0
   issues, 100% coverage)**. Re-run it with
-  `skillspector scan skills/solana-nft-creation --no-llm`.
+  `skillspector scan skills/solana-nft-creation --no-llm`. A scan of the
+  repository root also covers the reference CLI, tests and docs; its only
+  remaining SkillSpector finding is the transitive `elliptic` low advisory in
+  the Irys uploader, which is not part of the installed skill.
 - Read [SECURITY.md](SECURITY.md) before a mainnet launch.
 
 ## Contributing

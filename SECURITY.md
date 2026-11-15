@@ -26,9 +26,13 @@ v2.12.0, 2026-11-15) reports **0/100, LOW, SAFE, 0 issues, 100% coverage** for
 the installable skill. The skill package has no executable code and no
 dependencies.
 
-The reference CLI's dependency tree has one known low advisory
+SkillSpector reports one low advisory in the reference CLI's dependency tree
 (`elliptic@6.6.1` through the Irys bundler, no fixed release); see the
-dependency notes below. That dependency is not part of the installed skill.
+dependency notes below. `npm audit` additionally lists accepted transitive low
+and moderate findings. None of them are part of the installed skill.
+
+A scan of the repository root also covers the reference CLI, tests and docs;
+its only remaining SkillSpector finding is that same `elliptic` advisory.
 
 ## Transaction approval
 
@@ -58,7 +62,7 @@ background or automatic signing mode.
 - On resume, the CLI checks the recorded signature: confirmed means the item is
   kept, in-flight means the same bytes are re-sent, expired means the mint is
   recreated. A recorded address is never reused blindly.
-- A corrupt state file is reported, not replaced; it may be the only record of
+- An invalid state file is reported, not replaced; it may be the only record of
   minted items.
 
 ## Local wallet bridge

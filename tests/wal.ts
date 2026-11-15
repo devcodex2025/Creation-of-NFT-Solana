@@ -6,8 +6,8 @@ import * as path from "node:path";
  *
  * They prove the two properties the batch relies on: a mint is recorded before
  * it is broadcast, and a reset keeps the upload URIs so a retry does not pay
- * for Arweave twice. They also prove state writes are atomic and corrupt state
- * is reported instead of silently replaced.
+ * for Arweave twice. They also prove state writes are atomic and an invalid
+ * state file is reported instead of silently replaced.
  */
 
 const stateDir = `.tmp/state-wal-${Date.now()}`;
@@ -114,7 +114,7 @@ const temps = readdirSync(path.dirname(stateFile())).filter((file) =>
 check("no temporary state file is left behind", temps.length, 0);
 
 writeFileSync(stateFile(), "{ this is not json");
-throws("corrupt state is rejected, not replaced", () => readState());
+throws("an invalid state file is rejected, not replaced", () => readState());
 
 if (failures.length > 0) {
   console.error(`\n❌ ${failures.length} write-ahead log test(s) failed\n`);
