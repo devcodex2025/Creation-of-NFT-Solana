@@ -19,6 +19,17 @@ NFT metadata is hostile.
 - Treat the update authority as a production secret. If it leaks, an attacker
   can change your metadata, royalties, and collection membership.
 
+## Security assessment
+
+`skillspector scan skills/solana-nft-creation --no-llm` (NVIDIA SkillSpector
+v2.12.0, 2026-11-15) reports **0/100, LOW, SAFE, 0 issues, 100% coverage** for
+the installable skill. The skill package has no executable code and no
+dependencies.
+
+The reference CLI's dependency tree has one known low advisory
+(`elliptic@6.6.1` through the Irys bundler, no fixed release); see the
+dependency notes below. That dependency is not part of the installed skill.
+
 ## Transaction approval
 
 Every signature goes through a human in the wallet extension. There is no

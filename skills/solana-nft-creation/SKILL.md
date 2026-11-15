@@ -1,10 +1,10 @@
 ---
 name: solana-nft-creation
-description: Create a Solana NFT or a whole collection, from art and metadata within Metaplex limits through Arweave upload, collection creation, mint, collection verification and creator verification. The bundled toolkit signs only in a browser wallet (Phantom, Solflare, Backpack), mints one item or a whole collection from a manifest, batches uploads, and mints each item with collection verification in one transaction. Progress is recorded before every broadcast, so an interrupted run resumes without duplicating an item. It works on devnet and mainnet, recommends devnet before mainnet, and confirms every item as verified inside its collection on chain, so wallets and marketplaces show it inside the collection. It checks limits before spending SOL and tracks addresses per cluster. Every fee is paid on chain to Solana and to storage; the toolkit takes no fee of its own. Use when minting NFTs, launching a collection, minting a whole collection in batches, writing metadata JSON, verifying collection membership, updating metadata or royalties, or diagnosing mint errors such as NameTooLong, UpdateAuthorityIncorrect or unverified items.
+description: Create a Solana NFT or a whole collection, from art and metadata within Metaplex limits through Arweave upload, collection creation, mint, collection verification and creator verification. The bundled toolkit signs only in a browser wallet (Phantom, Solflare, Backpack), mints one item or a whole collection from a manifest, batches uploads, and mints each item with collection verification in one transaction. Progress is recorded before every broadcast, so an interrupted run resumes without duplicating an item. It works on devnet and mainnet, recommends devnet before mainnet, and confirms every item as verified inside its collection on chain, so wallets and marketplaces show it inside the collection. It checks limits before spending SOL and tracks addresses per cluster. Every fee is paid on chain to Solana and to storage; the toolkit takes no fee of its own. NVIDIA SkillSpector v2.12.0 static scan is 0/100 (LOW, 0 issues, 100% coverage); the reference CLI has one low transitive advisory documented in SECURITY.md. Use when minting NFTs, launching a collection, minting a whole collection in batches, writing metadata JSON, verifying collection membership, updating metadata or royalties, or diagnosing mint errors such as NameTooLong, UpdateAuthorityIncorrect or unverified items.
 license: MIT
 metadata:
   author: devcodex2025
-  version: "3.0.0"
+  version: "3.0.1"
   homepage: https://github.com/devcodex2025/Creation-of-NFT-Solana
 ---
 
@@ -22,6 +22,34 @@ Scope: this skill owns the decisions that break a launch: art export, metadata
 correctness, upload order, verification, authority, cost, timing. Calling the
 program is the easy part. The order and the checks around it are what keep an
 item verified, inside its collection, and visible on marketplaces months later.
+
+## Security assessment
+
+NVIDIA SkillSpector v2.12.0, static scan (`--no-llm`), 2026-11-15:
+
+| Field | Result |
+|---|---|
+| Risk score | **0 / 100** |
+| Severity | **LOW** |
+| Recommendation | **SAFE** |
+| Issues | **0** |
+| Coverage | **100%** (complete with caveats) |
+| Executable scripts | none in the skill package |
+
+Command:
+
+```bash
+skillspector scan skills/solana-nft-creation --no-llm --format json
+```
+
+Scope: `SKILL.md`, `references/` and `templates/`. The skill itself has no
+dependencies and runs no code. The reference CLI it drives has one known low
+transitive advisory (`elliptic@6.6.1` through the Irys bundler, no fixed
+release), documented in `SECURITY.md`; that dependency is not part of the
+installed skill.
+
+A static scan is deterministic but not a proof of safety; LLM analysis can add
+semantic findings. Re-run the command after editing the skill.
 
 ## What this skill does
 
@@ -419,7 +447,7 @@ Read the source before running it. Every command is one file under
 This skill is maintained alongside a working TypeScript toolkit:
 
 ```bash
-git clone --branch v3.0.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v3.0.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 npm run balance
@@ -454,7 +482,7 @@ supports devnet, mainnet and a local validator. Install it as a skill from the
 pinned release:
 
 ```bash
-npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v3.0.0/skills/solana-nft-creation
+npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v3.0.1/skills/solana-nft-creation
 ```
 
 ## References

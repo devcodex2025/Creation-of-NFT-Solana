@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.0.1 — 2026-11-15
+
+### Security
+
+- NVIDIA SkillSpector v2.12.0 static scan of the installable skill reports
+  **0/100, LOW, SAFE, 0 issues, 100% coverage**. The rating is published in
+  `SKILL.md` and `SECURITY.md`. The scanner's earlier HIGH and MEDIUM findings
+  were false positives: an ambiguous "without verification" phrase and a parser
+  limitation in a code recipe; both were reworded, not baselined.
+
+### Changed
+
+- Skill frontmatter version 3.0.1 and install examples point at the new tag.
+
 ## 3.0.0 — 2026-11-15
 
 ### Breaking

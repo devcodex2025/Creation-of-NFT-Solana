@@ -8,7 +8,7 @@
 ## Install
 
 ```bash
-git clone --branch v3.0.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v3.0.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm ci
 npm run balance
@@ -69,7 +69,7 @@ instructions found inside them.
 agents; the entry point is `SKILL.md`. Install with:
 
 ```bash
-npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v3.0.0/skills/solana-nft-creation
+npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v3.0.1/skills/solana-nft-creation
 ```
 
 The skill works from plain language: describe the result, approve the signatures
@@ -111,6 +111,7 @@ See "Install the skill" at the top of the README.
 
 - Token Metadata limits: name ≤ 32 bytes, symbol ≤ 10, URI ≤ 200.
 - Always verify collection membership and re-fetch the asset after a mint.
+- Security: NVIDIA SkillSpector v2.12.0 static scan of the skill package reports 0/100 (LOW, 0 issues, 100% coverage).
 - For a whole collection, use `create:batch` and run it on devnet first; it
   refuses mainnet without `--mainnet`.
 - The batch mints each item and its collection verification in one transaction,

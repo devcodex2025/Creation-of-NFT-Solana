@@ -274,29 +274,16 @@ runs, persist per-item status and skip already-verified items on retry.
 ```ts
 function assertMetadata(name: string, symbol: string, uri: string) {
   const bytes = (value: string) => Buffer.byteLength(value, "utf8");
-  if (bytes(name) > 32) throw new Error(`name is ${bytes(name)} bytes`);
-  if (bytes(symbol) > 10) throw new Error(`symbol is ${bytes(symbol)} bytes`);
-  if (bytes(uri) > 200) throw new Error(`uri is ${bytes(uri)} bytes`);
+  if (bytes(name) > 32) throw new Error("name is too long");
+  if (bytes(symbol) > 10) throw new Error("symbol is too long");
+  if (bytes(uri) > 200) throw new Error("uri is too long");
 }
 ```
 
-## 10. Retry with backoff
+## 10. Retry safely
 
-```ts
-async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
-  let lastError: unknown;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error;
-      const delay = 500 * 2 ** attempt + Math.random() * 250;
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-  throw lastError;
-}
-```
-
-Retry only idempotent reads and transaction sends with a fresh blockhash.
-Before retrying a mint, confirm whether the first attempt landed.
+Retry only idempotent reads and transaction sends with a fresh blockhash. Use
+exponential backoff with a cap. Before retrying a mint, confirm whether the
+first attempt landed: a timeout is not proof of failure. Never rebuild a
+transaction that already has a signature; re-send the same bytes or reconcile
+by signature.

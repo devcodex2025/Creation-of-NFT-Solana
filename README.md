@@ -42,7 +42,7 @@ and Explorer links.
 ## Install the skill
 
 ```bash
-npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v3.0.0/skills/solana-nft-creation
+npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v3.0.1/skills/solana-nft-creation
 ```
 
 Restart the agent so it reloads its skill list.
@@ -50,7 +50,7 @@ Restart the agent so it reloads its skill list.
 The skill drives the toolkit in this repository. Clone it once:
 
 ```bash
-git clone --branch v3.0.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v3.0.1 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana && npm ci
 ```
 
@@ -126,6 +126,7 @@ uploads.
 - **Devnet first** — a mainnet batch refuses to start without `--mainnet`.
 - **Local testing** — `test:e2e` runs the flow against a local validator; it is manual and skips without `E2E_BROWSER=1`.
 - **AI agent skill** — a complete `SKILL.md` plus references for professional NFT work.
+- **Scanned skill** — NVIDIA SkillSpector v2.12.0: 0/100, LOW, 0 issues, 100% coverage.
 
 ## Quickstart
 
@@ -676,6 +677,9 @@ More: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 - `npm audit` is part of the release check. The abandoned `bigint-buffer`
   package is replaced by a local pure-JavaScript implementation in
   `vendor/bigint-buffer`, so CVE-2025-3194 is not reachable.
+- NVIDIA SkillSpector v2.12.0 scans the installable skill at **0/100 (LOW, 0
+  issues, 100% coverage)**. Re-run it with
+  `skillspector scan skills/solana-nft-creation --no-llm`.
 - Read [SECURITY.md](SECURITY.md) before a mainnet launch.
 
 ## Contributing

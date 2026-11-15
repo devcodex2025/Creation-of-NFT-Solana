@@ -148,6 +148,10 @@ Fixes:
 - `skillspector scan <repository> --no-llm` reports 1 low finding: the
   `elliptic@6.6.1` advisory reached through the Irys bundler. There are no high
   or medium findings.
+- Browser-only skill, 2026-11-15: `skillspector scan
+  skills/solana-nft-creation --no-llm` (v2.12.0) reports 0/100 LOW, 0 issues,
+  100% coverage. The repository scan still reaches the same single low
+  `elliptic` advisory in the CLI dependency tree, not in the skill package.
 - GitHub Actions: run `43647919047` passed on the release commit; run
   `43648375649` passed every step after the workflow gained the label, bridge,
   security and audit checks.

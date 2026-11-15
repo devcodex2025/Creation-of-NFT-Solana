@@ -89,9 +89,9 @@ Rules that keep batches reliable:
 
 - One Token Metadata mint needs several accounts. A mint plus verification is
   about 835 bytes; two full mint+verify pairs do not fit in the 1232-byte
-  transaction limit. Two mints without verification fit (about 1156 bytes), so
-  batch at most two mints and verify separately, or use Core for denser
-  batches.
+  transaction limit. Two mints that omit the collection-verification
+  instruction fit (about 1156 bytes), so batch at most two mints and verify
+  separately, or use Core for denser batches.
 - The mint account is a new signer, but the wallet stays the owner and the
   update authority. Record the mint address and the signed bytes before
   broadcasting. If the blockhash expires, generate a new mint; never rebuild a
