@@ -1,40 +1,25 @@
 import {
   createGenericFile,
   createGenericFileFromJson,
-  createSignerFromKeypair,
   generateSigner,
-  keypairIdentity,
-  lamports,
   percentAmount,
   publicKey as umiPublicKey,
-  signerIdentity,
-  sol,
   some,
   transactionBuilder,
   type GenericFile,
   type PublicKey,
   type Signer,
-  type TransactionBuilder,
   type Umi,
 } from "@metaplex-foundation/umi";
 import {
-  MetadataDelegateRole,
-  TokenStandard,
   createNft,
-  delegateCollectionV1,
   fetchDigitalAsset,
-  findMetadataDelegateRecordPda,
   findMetadataPda,
-  revokeCollectionV1,
-  updateMetadataAccountV2,
   verifyCollectionV1,
-  verifyCreatorV1,
 } from "@metaplex-foundation/mpl-token-metadata";
-import {
-  setComputeUnitPrice,
-  transferSol,
-} from "@metaplex-foundation/mpl-toolbox";
-import { toWeb3JsTransaction } from "@metaplex-foundation/umi-web3js-adapters";
+import { setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { PublicKey as Web3PublicKey } from "@solana/web3.js";
 import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import * as path from "node:path";
@@ -57,26 +42,21 @@ import {
 import {
   readBatchItems,
   readState,
+  resetBatchItem,
   saveBatchItem,
   saveCollection,
   saveNft,
   setWallet,
   stateFile,
 } from "../lib/state";
-import { sendAndConfirm } from "../lib/tx";
+import { retryRpc, sendAndConfirm, type SignedTransactionRecord } from "../lib/tx";
 import { contentTypeFor } from "../lib/upload";
-import {
-  createProjectUmi,
-  getStorageBackend,
-  resolveSignerMode,
-} from "../lib/umi";
+import { createProjectUmi, getStorageBackend, resolveSignerMode } from "../lib/umi";
 
 /**
- * Batch creation keeps wallet approvals down to three (fund, delegate, revoke)
- * by moving uploads and mints to a temporary key that lives in memory only.
- * Uploads go out as two bundles, and each mint and its verification share one
- * transaction, so a collection of 24 items costs 24 mint transactions instead
- * of 72 signatures.
+ * Batch creation uses only the connected browser wallet: it uploads the art
+ * and metadata, creates the collection, and mints every item with the wallet
+ * as both update authority and token owner. No temporary key ever owns an NFT.
  */
 
 interface ManifestCollection {
@@ -193,11 +173,13 @@ function assertItemName(name: string): void {
 }
 
 function slug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40) || "item";
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "item"
+  );
 }
 
 async function rentPerItemSol(): Promise<number> {
@@ -210,6 +192,269 @@ async function rentPerItemSol(): Promise<number> {
   } catch {
     return FALLBACK_RENT_PER_ITEM;
   }
+}
+
+/** Reads a collection and refuses to mint into one this wallet does not control. */
+async function loadCollection(
+  umi: Umi,
+  wallet: Signer,
+  address: PublicKey,
+) {
+  const asset = await retryRpc(() => fetchDigitalAsset(umi, address));
+  if (asset.metadata.updateAuthority !== wallet.publicKey) {
+    throw new Error(
+      `Collection ${address} is controlled by ${asset.metadata.updateAuthority}, not ${wallet.publicKey}.`,
+    );
+  }
+  if (asset.metadata.collectionDetails.__option !== "Some") {
+    throw new Error(
+      `${address} is an NFT but not a collection. Create it with create:collection or isCollection.`,
+    );
+  }
+  return asset;
+}
+
+async function assertItemOwnership(
+  umi: Umi,
+  mint: PublicKey,
+  collection: PublicKey,
+  wallet: Signer,
+) {
+  const asset = await retryRpc(() => fetchDigitalAsset(umi, mint));
+  const verified =
+    asset.metadata.collection.__option === "Some" &&
+    asset.metadata.collection.value.verified &&
+    asset.metadata.collection.value.key === collection;
+  if (!verified) {
+    throw new Error(`Mint ${mint} is not verified into the collection.`);
+  }
+
+  const ata = getAssociatedTokenAddressSync(
+    new Web3PublicKey(mint),
+    new Web3PublicKey(wallet.publicKey),
+  );
+  const balance = await retryRpc(() =>
+    connection.getTokenAccountBalance(ata),
+  );
+  if (balance.value.amount !== "1") {
+    throw new Error(
+      `Mint ${mint} was not delivered to ${wallet.publicKey}; check token ownership.`,
+    );
+  }
+  return asset;
+}
+
+/**
+ * A transaction can land while the process dies before the state write. The
+ * mint address is recorded before signing, so a re-run can tell the two cases
+ * apart: an account on chain means the item is done, a missing account means
+ * the transaction never landed and the item can be minted again.
+ */
+/**
+ * A transaction can land while the process dies before the state write. The
+ * mint address and the signed bytes are recorded before signing, so a re-run
+ * can tell three cases apart: confirmed, still in flight, and expired.
+ */
+async function recordedStatus(signature: string) {
+  const response = await retryRpc(() =>
+    connection.getSignatureStatuses([signature], {
+      searchTransactionHistory: true,
+    }),
+  );
+  return response.value[0] ?? null;
+}
+
+/**
+ * Returns true when the recorded transaction is confirmed, false when its
+ * blockhash expired and it can never land. An in-flight transaction is
+ * re-broadcast with the same signature and awaited, so a fast re-run never
+ * creates a second mint for an item that is still settling.
+ */
+async function settleRecorded(
+  record: SignedTransactionRecord,
+): Promise<boolean> {
+  const current = await recordedStatus(record.signature);
+  if (current?.err) {
+    throw new Error(
+      `Transaction ${record.signature} failed on chain: ${JSON.stringify(current.err)}`,
+    );
+  }
+  if (
+    current?.confirmationStatus === "confirmed" ||
+    current?.confirmationStatus === "finalized"
+  ) {
+    return true;
+  }
+
+  const height = await retryRpc(() => connection.getBlockHeight("confirmed"));
+  if (height > record.lastValidBlockHeight) {
+    return false;
+  }
+
+  try {
+    await connection.sendRawTransaction(
+      Buffer.from(record.transaction, "base64"),
+      { skipPreflight: true, maxRetries: 3 },
+    );
+  } catch (error) {
+    const text = error instanceof Error ? error.message : String(error);
+    if (!/already been processed|already processed/i.test(text)) throw error;
+  }
+
+  try {
+    await connection.confirmTransaction(
+      {
+        signature: record.signature,
+        blockhash: record.blockhash,
+        lastValidBlockHeight: record.lastValidBlockHeight,
+      },
+      "confirmed",
+    );
+    return true;
+  } catch (error) {
+    const after = await recordedStatus(record.signature);
+    if (after?.err) {
+      throw new Error(
+        `Transaction ${record.signature} failed on chain: ${JSON.stringify(after.err)}`,
+      );
+    }
+    if (
+      after?.confirmationStatus === "confirmed" ||
+      after?.confirmationStatus === "finalized"
+    ) {
+      return true;
+    }
+    const now = await retryRpc(() => connection.getBlockHeight("confirmed"));
+    if (now > record.lastValidBlockHeight) return false;
+    throw new Error(
+      `Could not settle ${record.signature}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+async function reconcileBatch(
+  umi: Umi,
+  collection: PublicKey,
+  wallet: Signer,
+): Promise<void> {
+  const minted = new Set(
+    readState()
+      .nfts.filter((nft) => nft.collection === collection)
+      .map((nft) => nft.name),
+  );
+  const unfinished = readBatchItems(collection).filter(
+    (item) => item.address && !minted.has(item.name),
+  );
+
+  for (const item of unfinished) {
+    const address = umiPublicKey(item.address!);
+
+    // If the signed bytes exist, settle the exact transaction first: a fast
+    // re-run must not reset a mint that is still in flight.
+    if (item.signed) {
+      const landed = await settleRecorded(item.signed);
+      if (!landed) {
+        resetBatchItem(collection, item.name);
+        console.log(
+          `   Pending : ${item.name} expired, it will be minted again.`,
+        );
+        continue;
+      }
+    }
+
+    const account = await retryRpc(() =>
+      connection.getAccountInfo(new Web3PublicKey(address)),
+    );
+    if (!account) {
+      // A confirmed signature with no mint account is inconsistent. Never
+      // reset it silently: that is exactly how a duplicate would be created.
+      throw new Error(
+        `Pending mint ${item.name} has signature ${item.signed?.signature ?? item.signature}, but ${address} does not exist. Inspect the transaction before retrying.`,
+      );
+    }
+
+    // Do not trust the local record: read the mint back from the chain.
+    const asset = await assertItemOwnership(umi, address, collection, wallet);
+    const signature = item.signed?.signature ?? item.signature ?? "";
+    saveNft({
+      address,
+      name: item.name,
+      uri: item.metadataUri ?? asset.metadata.uri,
+      signature,
+      collection,
+      verified: true,
+      createdAt: new Date().toISOString(),
+    });
+    saveBatchItem(collection, {
+      name: item.name,
+      address: item.address,
+      status: "minted",
+      signature,
+      signed: null,
+    });
+    console.log(
+      `   Recovered: ${item.name} was already minted at ${item.address}.`,
+    );
+  }
+}
+
+/**
+ * Reuses a collection whose create transaction landed before the process died.
+ * Only a `pending` record with a matching name and symbol is considered, and
+ * the chain must confirm both the collection flag and the wallet authority.
+ */
+async function recoverPendingCollection(
+  umi: Umi,
+  wallet: Signer,
+  name?: string,
+  symbol?: string,
+): Promise<PublicKey | null> {
+  const pending = readState().collection;
+  if (!pending || pending.status !== "pending") return null;
+  if (name && pending.name !== name) return null;
+  if (symbol && pending.symbol !== symbol) return null;
+
+  const address = umiPublicKey(pending.address);
+  if (pending.signed) {
+    const landed = await settleRecorded(pending.signed);
+    if (!landed) {
+      console.log(
+        `\nPrevious collection ${pending.address} expired. Creating a new one.`,
+      );
+      return null;
+    }
+  }
+
+  const account = await retryRpc(() =>
+    connection.getAccountInfo(new Web3PublicKey(address)),
+  );
+  if (!account) {
+    if (pending.signed) {
+      throw new Error(
+        `Collection signature ${pending.signed.signature} is confirmed, but ${pending.address} does not exist. Inspect the transaction before retrying.`,
+      );
+    }
+    console.log(
+      `\nPrevious collection ${pending.address} never landed. Creating a new one.`,
+    );
+    return null;
+  }
+
+  const asset = await retryRpc(() => fetchDigitalAsset(umi, address));
+  if (asset.metadata.updateAuthority !== wallet.publicKey) {
+    throw new Error(
+      `Collection ${pending.address} from the previous run is controlled by ${asset.metadata.updateAuthority}. Refusing to reuse it.`,
+    );
+  }
+  if (asset.metadata.collectionDetails.__option !== "Some") {
+    throw new Error(
+      `Collection ${pending.address} from the previous run is not a collection. Refusing to reuse it.`,
+    );
+  }
+
+  saveCollection({ ...pending, status: "minted", signed: null });
+  console.log(`\nRecovered collection ${pending.address} from the previous run.`);
+  return address;
 }
 
 async function main(): Promise<void> {
@@ -225,7 +470,7 @@ async function main(): Promise<void> {
     getString(flags, "signer", process.env.SIGNER),
   );
   if (mode === "readonly") {
-    throw new Error("create:batch needs a signer. Use browser or keypair.");
+    throw new Error("create:batch needs browser signing. Use --signer browser.");
   }
   if (getStorageBackend() !== "irys") {
     throw new Error(
@@ -253,7 +498,10 @@ async function main(): Promise<void> {
   const royaltyBps = Math.round(royalty * 100);
   const priorityFee = getNumber(flags, "priority-fee", 0);
   const dryRun = hasFlag(flags, "dry-run");
-  const limit = Math.max(0, Math.floor(getNumber(flags, "limit", manifest.items.length)));
+  const limit = Math.max(
+    0,
+    Math.floor(getNumber(flags, "limit", manifest.items.length)),
+  );
 
   if (!collectionAddress) {
     if (!name || !symbol || !image) {
@@ -274,14 +522,23 @@ async function main(): Promise<void> {
   const prepared: PreparedItem[] = manifest.items.map((item, index) => {
     assertItemName(item.name);
     if (!existsSync(item.image)) {
-      throw new Error(
-        `Item ${index + 1} image not found: ${item.image}`,
-      );
+      throw new Error(`Item ${index + 1} image not found: ${item.image}`);
     }
     return { ...item, attributes: loadAttributes(item.attributesFile) };
   });
   if (prepared.length === 0) {
     throw new Error("The manifest has no items.");
+  }
+
+  // Item names are the resume key, so a duplicate would be silently skipped.
+  const names = new Set<string>();
+  for (const item of prepared) {
+    if (names.has(item.name)) {
+      throw new Error(
+        `Duplicate item name "${item.name}". Names must be unique: they are how a re-run knows what is already minted.`,
+      );
+    }
+    names.add(item.name);
   }
 
   const perItemRent = await rentPerItemSol();
@@ -301,7 +558,7 @@ async function main(): Promise<void> {
       `   Rent (est.): ${(perItemRent * planned + (collectionAddress ? 0 : perItemRent)).toFixed(3)} SOL`,
     );
     console.log(
-      "   Storage    : charged to the temporary key, usually a few thousandths of a SOL",
+      "   Storage    : charged to your connected browser wallet through Irys",
     );
     console.log(`   State      : ${stateFile()}`);
     console.log("\nItems");
@@ -321,34 +578,19 @@ async function main(): Promise<void> {
       [
         "This is mainnet and the collection costs real SOL.",
         "Run the same manifest on devnet first, check the result, then repeat with --mainnet.",
-        "Example: SOLANA_CLUSTER=devnet npm run create:batch -- --manifest collection.json",
+        "Example: SOLANA_CLUSTER=devnet npx esrun@3.2.30 src/commands/create-batch.ts --manifest collection.json",
       ].join("\n"),
     );
   }
 
-  const umi: Umi = await createProjectUmi({
-    keypairPath: getString(flags, "keypair"),
-    signer: mode,
+  const umi = await createProjectUmi({
+    signer: "browser",
     browserAction: "batch",
   });
   const wallet: Signer = umi.identity;
   setWallet(wallet.publicKey);
 
-  const useTemporaryKey = mode === "browser";
-  const temporaryKeypair = umi.eddsa.generateKeypair();
-  const temporary: Signer = createSignerFromKeypair(umi, temporaryKeypair);
-  const session = useTemporaryKey ? temporary : wallet;
-
-  function useWallet(): void {
-    umi.use(signerIdentity(wallet));
-  }
-
-  function useSession(): void {
-    if (useTemporaryKey) umi.use(keypairIdentity(temporaryKeypair));
-    else useWallet();
-  }
-
-  function withFee(builder: TransactionBuilder): TransactionBuilder {
+  function withFee(builder: ReturnType<typeof transactionBuilder>) {
     if (priorityFee <= 0) return builder;
     return transactionBuilder()
       .add(
@@ -362,120 +604,21 @@ async function main(): Promise<void> {
   let collectionKey: PublicKey | null = collectionAddress
     ? umiPublicKey(collectionAddress)
     : null;
-  let delegated = false;
-  let revoked = false;
+  let collectionSymbol: string;
+  let itemRoyaltyBps = royaltyBps;
 
-  /**
-   * Collection verification is authorised by a `Collection` metadata delegate,
-   * not by the legacy `CollectionAuthorityRecord`. `verifyCollectionV1` looks up
-   * a `MetadataDelegateRecord` PDA, so the delegate has to be created with
-   * `delegateCollectionV1`.
-   */
-  function delegateRecord() {
-    if (!collectionKey) throw new Error("No collection to delegate.");
-    return findMetadataDelegateRecordPda(umi, {
-      mint: collectionKey,
-      delegateRole: MetadataDelegateRole.Collection,
-      updateAuthority: wallet.publicKey,
-      delegate: session.publicKey,
-    })[0];
+  // A collection that landed but was never recorded is reused, not recreated.
+  if (!collectionKey) {
+    collectionKey = await recoverPendingCollection(umi, wallet, name, symbol);
   }
 
-  async function revokeDelegation(): Promise<void> {
-    if (!useTemporaryKey || !delegated || revoked || !collectionKey) return;
-    const record = delegateRecord();
-    useWallet();
-    await sendAndConfirm(
-      umi,
-      withFee(
-        revokeCollectionV1(umi, {
-          delegateRecord: record,
-          delegate: session.publicKey,
-          mint: collectionKey,
-          authority: wallet,
-          tokenStandard: TokenStandard.NonFungible,
-        }),
-      ),
-    );
-    revoked = true;
-    delegated = false;
-    console.log("   Batch authority revoked.");
-  }
-
-  /**
-   * The wallet is the item creator, so only the wallet can mark that creator as
-   * verified. Twenty items fit in one transaction, which keeps the extra
-   * approvals to one per twenty items.
-   */
-  async function verifyItemCreators(address: PublicKey): Promise<void> {
-    const addresses = readState()
-      .nfts.filter((nft) => nft.collection === address)
-      .map((nft) => nft.address);
-    if (addresses.length === 0) {
-      console.log("No minted items in state for this collection.");
-      return;
-    }
-    const chunkSize = 20;
-    for (let start = 0; start < addresses.length; start += chunkSize) {
-      const chunk = addresses.slice(start, start + chunkSize);
-      let builder = transactionBuilder();
-      for (const mint of chunk) {
-        builder = builder.add(
-          verifyCreatorV1(umi, {
-            metadata: findMetadataPda(umi, { mint: umiPublicKey(mint) }),
-            authority: wallet,
-          }),
-        );
-      }
-      console.log(
-        `\nVerifying the creator on ${chunk.length} items. Approve in the browser.`,
-      );
-      await sendAndConfirm(umi, withFee(builder));
-    }
-    console.log("   Creator verified on every item.");
-  }
-
-  async function sweep(): Promise<void> {
-    if (!useTemporaryKey) return;
-    useSession();
-    const balance = await umi.rpc.getBalance(session.publicKey);
-    if (balance.basisPoints === 0n) return;
-
-    const withAmount = (amount: bigint) =>
-      transactionBuilder().add(
-        transferSol(umi, {
-          source: temporary,
-          destination: wallet.publicKey,
-          amount: lamports(amount),
-        }),
-      );
-
-    // The batch key has to end at zero, or the runtime rejects the transfer
-    // for leaving a non rent-exempt account behind.
-    let fee = 5_000n;
-    try {
-      const probe = await withAmount(0n).setLatestBlockhash(umi);
-      const quote = await connection.getFeeForMessage(
-        toWeb3JsTransaction(probe.build(umi)).message,
-        "confirmed",
-      );
-      if (quote.value !== null) fee = BigInt(quote.value);
-    } catch {
-      // Keep the base fee if the fee quote is unavailable.
-    }
-
-    if (balance.basisPoints <= fee) {
-      console.log(
-        `   Batch key keeps ${balance.basisPoints} lamports, below the network fee.`,
-      );
-      return;
-    }
-
-    const amount = balance.basisPoints - fee;
-    await sendAndConfirm(umi, withAmount(amount));
-    console.log(
-      `   Returned ${(Number(amount) / lamportsPerSol).toFixed(4)} SOL to the wallet.`,
-    );
+  let collectionAsset: Awaited<ReturnType<typeof loadCollection>> | null = null;
+  if (collectionKey) {
+    // Validate before reconciling: never write state for a collection this
+    // wallet does not control.
+    collectionAsset = await loadCollection(umi, wallet, collectionKey);
+    // A mint that landed but was never recorded is kept, not minted twice.
+    await reconcileBatch(umi, collectionKey, wallet);
   }
 
   // Items already minted into this collection are skipped, so a failed run
@@ -493,93 +636,39 @@ async function main(): Promise<void> {
       item,
     ]),
   );
-  const pending = prepared
-    .filter((item) => !done.has(item.name))
-    .slice(0, limit);
-  const skipped = prepared.length - pending.length;
+  const remaining = prepared.filter((item) => !done.has(item.name));
+  const pending = remaining.slice(0, limit);
+  const skipped = prepared.length - remaining.length;
+  const deferred = remaining.length - pending.length;
 
   console.log("\nBatch creation");
   console.log(`   Cluster    : ${cluster} (${rpcUrl})`);
   console.log(`   Wallet     : ${wallet.publicKey}`);
-  if (useTemporaryKey) {
-    console.log(`   Batch key  : ${session.publicKey} (memory only)`);
-  }
   console.log(`   Items      : ${pending.length} to mint, ${skipped} already done`);
-  console.log(`   State      : ${stateFile()}`);
-  if (useTemporaryKey) {
-    console.log(
-      `   Approvals  : ${collectionAddress ? 2 : 3} in the browser wallet`,
-    );
-    if (hasFlag(flags, "verify-creators")) {
-      console.log(
-        `   Creators   : plus one approval per 20 items to verify the creator`,
-      );
-    }
+  if (deferred > 0) {
+    console.log(`   Deferred   : ${deferred} beyond --limit, run again for them`);
   }
-
-  const creatorFlag = useTemporaryKey && hasFlag(flags, "verify-creators");
+  console.log(`   State      : ${stateFile()}`);
+  console.log(
+    `   Approvals  : browser wallet upload signatures plus one transaction per item`,
+  );
 
   if (pending.length === 0) {
     console.log("\nNothing to do. Every item in the manifest is already minted.");
-    if (!creatorFlag || !collectionKey) return;
-    useWallet();
-    await verifyItemCreators(collectionKey);
     return;
   }
 
-  const fundFlag = getNumber(flags, "fund", 0);
-  const funding =
-    fundFlag > 0
-      ? fundFlag
-      : Math.round((0.05 + pending.length * 0.016) * 1000) / 1000;
   let minted = 0;
-  let completed = false;
 
   try {
-    if (useTemporaryKey) {
-      useWallet();
-      console.log(
-        `\n[1/3] Funding the batch key with ${funding} SOL. Approve in the browser.`,
-      );
-      await sendAndConfirm(
-        umi,
-        withFee(
-          transactionBuilder().add(
-            transferSol(umi, {
-              source: wallet,
-              destination: session.publicKey,
-              amount: sol(funding),
-            }),
-          ),
-        ),
-      );
-    }
-
-    // Uploads are paid by the batch key, so the collection image goes out
-    // before the wallet signs anything else.
-    useSession();
-
-    let collectionSymbol: string;
-    let itemRoyaltyBps = royaltyBps;
-    if (collectionKey) {
-      const asset = await fetchDigitalAsset(umi, collectionKey);
-      if (asset.metadata.updateAuthority !== wallet.publicKey) {
-        throw new Error(
-          `Collection ${collectionKey} is controlled by ${asset.metadata.updateAuthority}, not ${wallet.publicKey}.`,
-        );
-      }
-      if (asset.metadata.collectionDetails.__option !== "Some") {
-        throw new Error(
-          `${collectionKey} is an NFT but not a collection. Create it with create:collection or isCollection.`,
-        );
-      }
-      collectionSymbol = asset.metadata.symbol;
-      itemRoyaltyBps = asset.metadata.sellerFeeBasisPoints;
+    if (collectionKey && collectionAsset) {
+      collectionSymbol = collectionAsset.metadata.symbol;
+      itemRoyaltyBps = collectionAsset.metadata.sellerFeeBasisPoints;
       saveCollection({
         address: collectionKey,
-        name: asset.metadata.name,
-        symbol: asset.metadata.symbol,
-        uri: asset.metadata.uri,
+        name: collectionAsset.metadata.name,
+        symbol: collectionAsset.metadata.symbol,
+        uri: collectionAsset.metadata.uri,
         signature: stateSignature(collectionKey),
         createdAt: new Date().toISOString(),
       });
@@ -599,94 +688,71 @@ async function main(): Promise<void> {
       assertOnChainLimits({ name: name!, symbol: symbol!, uri });
 
       const collectionMint = generateSigner(umi);
-      collectionKey = collectionMint.publicKey;
+      const address = collectionMint.publicKey;
+      collectionKey = address;
       collectionSymbol = symbol!;
+      const createdAt = new Date().toISOString();
 
-      // The wallet creates the collection, which lets it mark itself as a
-      // verified creator, and delegates collection verification to the batch
-      // key in the same transaction. That is one approval for both steps.
-      useWallet();
-      console.log(
-        `\n[2/3] Creating collection ${collectionKey} and delegating verification. Approve in the browser.`,
-      );
+      // Record the intent before signing. If this process dies after the
+      // collection lands, the next run reuses this address instead of creating
+      // a second collection.
+      saveCollection({
+        address,
+        name: name!,
+        symbol: symbol!,
+        uri,
+        signature: "",
+        createdAt,
+        status: "pending",
+        signed: null,
+      });
+
+      console.log(`\nCreating collection ${address}`);
       const signature = await sendAndConfirm(
         umi,
         withFee(
-          useTemporaryKey
-            ? transactionBuilder()
-                .add(
-                  createNft(umi, {
-                    mint: collectionMint,
-                    name: name!,
-                    symbol: symbol!,
-                    uri,
-                    sellerFeeBasisPoints: percentAmount(royaltyBps / 100),
-                    updateAuthority: wallet.publicKey,
-                    creators: some([
-                      { address: wallet.publicKey, verified: true, share: 100 },
-                    ]),
-                    isCollection: true,
-                  }),
-                )
-                .add(
-                  delegateCollectionV1(umi, {
-                    delegateRecord: delegateRecord(),
-                    delegate: session.publicKey,
-                    mint: collectionKey,
-                    authority: wallet,
-                    tokenStandard: TokenStandard.NonFungible,
-                  }),
-                )
-            : createNft(umi, {
-                mint: collectionMint,
-                name: name!,
-                symbol: symbol!,
-                uri,
-                sellerFeeBasisPoints: percentAmount(royaltyBps / 100),
-                updateAuthority: wallet.publicKey,
-                creators: some([
-                  { address: wallet.publicKey, verified: true, share: 100 },
-                ]),
-                isCollection: true,
-              }),
+          createNft(umi, {
+            mint: collectionMint,
+            name: name!,
+            symbol: symbol!,
+            uri,
+            sellerFeeBasisPoints: percentAmount(royaltyBps / 100),
+            updateAuthority: wallet.publicKey,
+            tokenOwner: wallet.publicKey,
+            creators: some([
+              { address: wallet.publicKey, verified: true, share: 100 },
+            ]),
+            isCollection: true,
+          }),
         ),
+        {
+          onSigned: (record) =>
+            saveCollection({
+              address,
+              name: name!,
+              symbol: symbol!,
+              uri,
+              signature: record.signature,
+              createdAt,
+              status: "pending",
+              signed: record,
+            }),
+        },
       );
-      if (useTemporaryKey) delegated = true;
 
       saveCollection({
-        address: collectionKey,
+        address,
         name: name!,
         symbol: symbol!,
         uri,
         signature,
-        createdAt: new Date().toISOString(),
+        createdAt,
+        status: "minted",
+        signed: null,
       });
       console.log(`   Collection : ${collectionKey}`);
       console.log(`   Explorer   : ${explorerAddressUrl(collectionKey)}`);
     }
-
-    // An existing collection only needs the delegate, not a create.
-    if (useTemporaryKey && !delegated) {
-      useWallet();
-      console.log(
-        "\n[1/2] Delegating collection verification to the batch key. Approve in the browser.",
-      );
-      await sendAndConfirm(
-        umi,
-        withFee(
-          delegateCollectionV1(umi, {
-            delegateRecord: delegateRecord(),
-            delegate: session.publicKey,
-            mint: collectionKey!,
-            authority: wallet,
-            tokenStandard: TokenStandard.NonFungible,
-          }),
-        ),
-      );
-      delegated = true;
-    }
-
-    useSession();
 
     // Two uploads instead of two per item: one bundle of art, one of JSON.
     const needImage = pending.filter((item) => !cached.get(item.name)?.imageUri);
@@ -769,49 +835,45 @@ async function main(): Promise<void> {
         symbol: collectionSymbol,
         uri: metadataUri,
         sellerFeeBasisPoints: percentAmount(itemRoyaltyBps / 100),
-        updateAuthority: useTemporaryKey ? session.publicKey : wallet.publicKey,
+        updateAuthority: wallet.publicKey,
+        tokenOwner: wallet.publicKey,
         creators: some([
-          {
-            address: wallet.publicKey,
-            verified: !useTemporaryKey,
-            share: 100,
-          },
+          { address: wallet.publicKey, verified: true, share: 100 },
         ]),
         collection: { key: collectionKey, verified: false },
       });
-      const verify = verifyCollectionV1(
-        umi,
-        useTemporaryKey
-          ? {
-              metadata: itemMetadata,
-              collectionMint: collectionKey,
-              delegateRecord: delegateRecord(),
-              authority: session,
-            }
-          : {
-              metadata: itemMetadata,
-              collectionMint: collectionKey,
-              authority: wallet,
-            },
-      );
-      // Mint, verify and hand the item to the wallet in one transaction, so a
-      // batch of 24 costs 24 signatures instead of 72.
+      const verify = verifyCollectionV1(umi, {
+        metadata: itemMetadata,
+        collectionMint: collectionKey,
+        authority: wallet,
+      });
+
+      // Record the address before signing, so a crash after broadcast can be
+      // reconciled instead of minting the same item twice.
+      saveBatchItem(collectionKey, {
+        name: item.name,
+        address: mint.publicKey,
+        status: "pending",
+        signed: null,
+      });
+
+      // Mint and verify in one transaction. The wallet owns the token and is
+      // the update authority, so no temporary key or authority handoff exists.
       const signature = await sendAndConfirm(
         umi,
-        withFee(
-          useTemporaryKey
-            ? transactionBuilder()
-                .add(create)
-                .add(verify)
-                .add(
-                  updateMetadataAccountV2(umi, {
-                    metadata: itemMetadata,
-                    newUpdateAuthority: wallet.publicKey,
-                  }),
-                )
-            : transactionBuilder().add(create).add(verify),
-        ),
+        withFee(transactionBuilder().add(create).add(verify)),
+        {
+          onSigned: (record) =>
+            saveBatchItem(collectionKey!, {
+              name: item.name,
+              address: mint.publicKey,
+              status: "pending",
+              signed: record,
+            }),
+        },
       );
+
+      await assertItemOwnership(umi, mint.publicKey, collectionKey, wallet);
 
       saveNft({
         address: mint.publicKey,
@@ -822,15 +884,17 @@ async function main(): Promise<void> {
         verified: true,
         createdAt: new Date().toISOString(),
       });
-      saveBatchItem(collectionKey!, {
+      saveBatchItem(collectionKey, {
         name: item.name,
         address: mint.publicKey,
         signature,
+        status: "minted",
+        signed: null,
       });
       minted += 1;
       console.log(`   Mint      : ${mint.publicKey}`);
       console.log(`   Explorer  : ${explorerAddressUrl(mint.publicKey)}`);
-      // Public devnet RPC rate-limits bursts. A short gap keeps a 24 item run
+      // Public devnet RPC rate-limits bursts. A short gap keeps a larger run
       // under the limit; `sendAndConfirm` retries anything that still gets 429.
       if (index < pending.length) {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -842,9 +906,8 @@ async function main(): Promise<void> {
       (nft) => nft.collection === collectionKey,
     );
     if (sample) {
-      const asset = await fetchDigitalAsset(
-        umi,
-        umiPublicKey(sample.address),
+      const asset = await retryRpc(() =>
+        fetchDigitalAsset(umi, umiPublicKey(sample.address)),
       );
       const verified =
         asset.metadata.collection.__option === "Some" &&
@@ -857,53 +920,21 @@ async function main(): Promise<void> {
       console.log("\nOn-chain check: collection membership is verified.");
     }
 
-    // The wallet is the item creator, so only the wallet can mark that creator
-    // as verified.
-    if (useTemporaryKey && hasFlag(flags, "verify-creators")) {
-      useWallet();
-      await verifyItemCreators(collectionKey!);
-    }
-
-    if (useTemporaryKey) {
-      useWallet();
-      console.log("\n[3/3] Revoking the batch key. Approve in the browser.");
-      await revokeDelegation();
-    }
-
-    await sweep();
-
-    completed = true;
     console.log(`\nBatch complete: ${minted} minted`);
     console.log(`   Collection : ${explorerAddressUrl(collectionKey!)}`);
     console.log(`   State      : ${stateFile()}`);
-  } finally {
-    try {
-      await revokeDelegation();
-    } catch (error) {
-      console.error(
-        `\nCould not revoke the batch authority. Revoke ${session.publicKey} manually from the collection update authority.`,
-        error,
-      );
-    }
-    try {
-      await sweep();
-    } catch (error) {
-      console.error(
-        `\nCould not return the batch key balance. Its address is ${session.publicKey}.`,
-        error,
-      );
-    }
-    if (!completed) {
-      console.error(
-        [
-          `\nStopped after ${minted} of ${pending.length} items.`,
-          "Uploads that already succeeded are cached in state.",
-          collectionKey
-            ? `Resume with: npm run create:batch -- --manifest ${manifestFlag} --collection ${collectionKey}`
-            : `Resume with: npm run create:batch -- --manifest ${manifestFlag} --collection <address printed above>`,
-        ].join("\n"),
-      );
-    }
+  } catch (error) {
+    console.error(
+      [
+        `\nStopped after ${minted} of ${pending.length} items.`,
+        "Uploads that already succeeded are cached in state.",
+        "Pending mints are reconciled on the next run: an item that landed is kept, one that did not is minted again.",
+        collectionKey
+          ? `Resume with: npx esrun@3.2.30 src/commands/create-batch.ts --manifest ${manifestFlag} --collection ${collectionKey}`
+          : `Resume with: npx esrun@3.2.30 src/commands/create-batch.ts --manifest ${manifestFlag} --collection <address printed above>`,
+      ].join("\n"),
+    );
+    throw error;
   }
 }
 

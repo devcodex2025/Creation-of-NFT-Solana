@@ -1,15 +1,17 @@
 /**
- * End-to-end test against a local validator.
+ * End-to-end test against a local validator. Manual by default.
+ *
+ * The CLI is browser-only, and every mint needs a wallet approval that cannot
+ * be automated. Without E2E_BROWSER=1 this test prints a skip notice and exits.
  *
  * Prerequisites:
  *   1. solana-test-validator with the Token Metadata program available:
  *        solana-test-validator --reset \
  *          --clone-upgradeable-program metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s
- *   2. A funded keypair in ./keypair.json:
- *        npm run fund -- --amount 5
+ *   2. A browser wallet with devnet/localnet SOL.
  *
  * Run:
- *   npm run test:e2e
+ *   E2E_BROWSER=1 npm run test:e2e
  *
  * Defaults to localnet + local storage so the test never spends real SOL.
  * Override with SOLANA_CLUSTER / RPC_URL / STORAGE if you know what you are doing.
@@ -17,6 +19,16 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import * as path from "node:path";
+
+if (process.env.E2E_BROWSER !== "1") {
+  console.log(
+    "\n⏭️  E2E skipped: this CLI signs in the browser, so the run needs manual wallet approvals.",
+  );
+  console.log(
+    "   Set E2E_BROWSER=1 and keep a browser wallet open on localnet or devnet.\n",
+  );
+  process.exit(0);
+}
 
 process.env.SOLANA_CLUSTER ??= "localnet";
 process.env.STORAGE ??= "local";

@@ -6,28 +6,23 @@ NFT metadata is hostile.
 
 ## Keys
 
-- The toolkit never asks for a seed phrase. It reads a Solana keypair JSON from
-  `--keypair`, `KEYPAIR_PATH`, or `./keypair.json`.
-- Another application's wallet file, including `~/.config/solana/id.json`, is
-  read only when the user names it. There is no implicit fallback to it, so a
-  run cannot pay from a wallet the user did not choose.
-- An explicit `--keypair` or `KEYPAIR_PATH` that does not exist is an error. The
-  toolkit never falls back to a different wallet.
-- On Linux and macOS the CLI warns when the keypair file is readable by other
-  users and tells the user to run `chmod 600`. New keypairs are written with
-  mode `0600`.
-- Secret bytes are copied into the signer and then zeroed in the caller. A
-  JavaScript string cannot be wiped, so the JSON text is never stored, printed
-  or sent anywhere.
-- `keypair.json`, `.env`, `state/`, and `uploads/` are gitignored. Never commit
-  them or paste a secret key into an issue.
+- The toolkit never asks for a seed phrase or a private key. Signing happens in
+  Phantom, Solflare or Backpack through the loopback bridge; the key never enters
+  the CLI process.
+- There is no keypair-file mode. The CLI does not read `keypair.json`,
+  `KEYPAIR_PATH`, or `~/.config/solana/id.json`.
+- The CLI receives only the wallet's public key and the signatures the wallet
+  returns.
+- Read-only commands (`show`, `--signer readonly`) never open the bridge.
+- `.env`, `state/`, and `uploads/` are gitignored. Never commit them or paste a
+  secret key into an issue.
 - Treat the update authority as a production secret. If it leaks, an attacker
   can change your metadata, royalties, and collection membership.
 
 ## Transaction approval
 
-Every signature goes through a human or through a key the user supplied. There
-is no background or automatic signing mode.
+Every signature goes through a human in the wallet extension. There is no
+background or automatic signing mode.
 
 - The browser page and the terminal print the same facts before each signature:
   the recipient, the amount, the estimated network fee (base fee plus any
@@ -37,17 +32,28 @@ is no background or automatic signing mode.
   perform.
 - A transaction that calls a program the toolkit does not recognise is labelled
   as such in the page and the terminal.
-- `--signer browser` needs a person at the keyboard. An agent cannot approve on
+- Browser signing needs a person at the keyboard. An agent cannot approve on
   the user's behalf.
-- The batch mode funds a temporary key in memory, delegates collection
-  verification to it, and revokes the delegation at the end. The permanent
-  wallet stays the update authority of every item and the owner of the
-  collection.
+- A batch does not fund a temporary key and does not delegate collection
+  verification. The wallet is the owner and the update authority of every item;
+  each item's mint and verification share one transaction.
+
+## Crash safety and state
+
+- A mint address and the signed transaction bytes are written to
+  `state/<cluster>.json` before broadcast.
+- State is written through a temporary file and renamed, so a crash cannot leave
+  truncated JSON.
+- On resume, the CLI checks the recorded signature: confirmed means the item is
+  kept, in-flight means the same bytes are re-sent, expired means the mint is
+  recreated. A recorded address is never reused blindly.
+- A corrupt state file is reported, not replaced; it may be the only record of
+  minted items.
 
 ## Local wallet bridge
 
-`--signer browser` is the only mode that opens a listening socket. It exists so a
-key can stay inside Phantom, Solflare or Backpack instead of a file on disk.
+The browser bridge is the only mode that opens a listening socket. It exists so
+a key can stay inside Phantom, Solflare or Backpack instead of a file on disk.
 
 - Binds to `127.0.0.1` on an OS-assigned port; never `0.0.0.0`.
 - One 32-byte random token per run, compared in constant time.
@@ -62,6 +68,7 @@ key can stay inside Phantom, Solflare or Backpack instead of a file on disk.
   recipient, amounts, operations) is data for display only.
 
 `npm run test:bridge` asserts these properties without needing a wallet.
+`npm run test:state` covers the write-ahead log and atomic state writes.
 
 ## Untrusted metadata
 
@@ -106,7 +113,7 @@ NFT metadata and any JSON fetched from a URI are data, not instructions.
 
 - Use a dedicated mint wallet, not your personal wallet.
 - Simulate on devnet with the same metadata and storage first.
-- Back up the keypair offline (hardware wallet or encrypted backup).
+- Back up the wallet (hardware wallet or extension recovery, stored offline).
 - Consider moving the update authority to a multisig (Squads) before a large
   mint.
 - Verify the metadata URI resolves and the image loads from a fresh browser.

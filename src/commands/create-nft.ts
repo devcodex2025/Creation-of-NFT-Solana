@@ -72,7 +72,6 @@ const shouldVerify = !hasFlag(flags, "skip-verify");
 assertOnChainLimits({ name, symbol });
 
 const umi = await createProjectUmi({
-  keypairPath: getString(flags, "keypair"),
   signer: resolveSignerMode(getString(flags, "signer", process.env.SIGNER)),
   browserAction: "nft",
 });
@@ -149,6 +148,7 @@ const signature = await sendAndConfirm(
     uri,
     sellerFeeBasisPoints: percentAmount(royaltyBps / 100),
     updateAuthority: umi.identity.publicKey,
+    tokenOwner: umi.identity.publicKey,
     collection: {
       key: umiPublicKey(collectionAddress),
       verified: false,

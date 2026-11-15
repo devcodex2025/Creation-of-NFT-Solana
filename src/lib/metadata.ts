@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
-import { repoRoot } from "./keypair";
+import { repoRoot } from "./paths";
 
 export interface NftAttribute {
   trait_type: string;

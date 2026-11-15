@@ -8,12 +8,16 @@ Thanks for helping make Solana NFT tooling better.
 git clone https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana
 npm install
-npm run keypair
+npm run balance
 ```
+
+`npm run balance` opens the local browser bridge; connect Phantom, Solflare or
+Backpack and it prints the wallet address. The CLI is browser-only: do not add a
+keypair-file mode.
 
 Copy `.env.example` to `.env` only when you need to override the devnet
 defaults. Run a local validator that has the Token Metadata program, then fund
-the wallet:
+the connected wallet:
 
 ```bash
 solana-test-validator --reset \
@@ -34,15 +38,27 @@ npm run fund -- --amount 5
 
 ```bash
 npm run typecheck
-SOLANA_CLUSTER=localnet STORAGE=local RPC_URL=http://127.0.0.1:8899 npm run test:e2e
+npm run test:state
+npm run test:labels
+npm run test:security
+npm run test:bridge
+```
+
+`test:e2e` needs a human at the keyboard and a browser wallet. It is skipped
+unless `E2E_BROWSER=1`:
+
+```bash
+SOLANA_CLUSTER=localnet STORAGE=local RPC_URL=http://127.0.0.1:8899 E2E_BROWSER=1 npm run test:e2e
 ```
 
 - Keep changes focused and typed.
-- Never commit `keypair.json`, `.env`, `state/`, or `uploads/`.
+- Never commit `.env`, `state/`, `uploads/`, or a wallet export.
 - New commands go in `src/commands/` and must be wired into `package.json`.
 - After changing dependencies, run `npm run pin:lock` so `package.json` and
   `package-lock.json` keep exact versions.
 - If you change metadata limits or flags, update the README and the skill docs.
+- Do not add a keypair path, `KEYPAIR_PATH`, or local secret loading. Signing is
+  browser-only by design.
 
 ## Commit style
 

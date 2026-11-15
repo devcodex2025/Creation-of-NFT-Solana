@@ -16,12 +16,12 @@ src/
     ├── asset.ts         fetch + summarize a digital asset
     ├── browser-bridge.ts loopback server + page for Phantom/Solflare signing
     ├── config.ts        cluster, RPC URL, explorer URLs
-    ├── keypair.ts       keypair discovery, loading, creation
     ├── metadata.ts      schema, limits, attributes, royalty parsing
     ├── offchain.ts      read NFT JSON over https or file://
-    ├── state.ts         per-cluster address registry
-    ├── tx.ts            send + finalized confirm, base58 signature
-    ├── umi.ts           Umi instance, signer, metadata + storage plugins
+    ├── paths.ts         repo root resolution
+    ├── state.ts         per-cluster registry + write-ahead log
+    ├── tx.ts            simulate, sign, record, send, confirm at `confirmed`
+    ├── umi.ts           browser signer + mplTokenMetadata + Irys web uploader
     └── upload.ts        image content types and uploads
 ```
 
@@ -37,7 +37,7 @@ environment variables + optional env file
 config.ts ──► connection (web3.js)
       │
       ▼
-umi.ts ──► Umi + keypairIdentity (or browser signer) + mplTokenMetadata + uploader
+umi.ts ──► Umi + browser signer + mplTokenMetadata + Irys web uploader
       │
       ├── create-collection.ts
       │      upload image → upload JSON → createNft(isCollection)
@@ -92,6 +92,10 @@ It is per cluster and gitignored. Deleting it never affects the chain; it only
 loses the convenience of default addresses. Pass `--collection` / `--mint` to
 work without state.
 
+`batch.items[]` adds `status` (`pending` or `minted`) and `signed` (signature,
+base64 transaction, blockhash, `lastValidBlockHeight`). The signed bytes exist
+only while a mint is in flight; a resumed run reconciles them against the chain.
+
 ## Storage
 
 `STORAGE=irys` (default) uploads through Irys to Arweave. The address is chosen
@@ -106,10 +110,28 @@ from `SOLANA_CLUSTER`:
 `./uploads` and returns `file://` URIs. Those are not publicly resolvable and
 must never be used for a real mint.
 
+## Transaction pipeline
+
+`sendAndConfirm` in `lib/tx.ts`:
+
+1. fetch a fresh blockhash;
+2. simulate with `verifySignatures: false` — a program error stops before the
+   wallet opens;
+3. sign once in the browser;
+4. record the signature and base64 bytes through `onSigned`;
+5. send, retrying the same bytes on 429/timeout;
+6. confirm at `confirmed`; an unknown result is re-checked by signature;
+7. the caller re-reads the mint and asserts ownership and verification.
+
+A crash between steps 4 and 7 is recoverable: `create-batch` calls
+`settleRecorded` on the saved bytes, re-sends the same signature if the blockhash
+is still alive, and resets only when it has expired.
+
 ## Trust boundaries
 
-- **Keypair** — read locally, never transmitted. Umi signs locally.
-- **RPC** — untrusted; responses are confirmed with `finalized` commitment and
+- **Wallet** — the key stays in Phantom, Solflare or Backpack. The CLI receives
+  only the public key and signatures through the loopback bridge.
+- **RPC** — untrusted; transactions confirm at `confirmed`, then every mint is
   re-fetched before being reported as success.
 - **Storage** — Arweave is immutable. Once uploaded, a URI cannot be changed;
   minting a new URI is the only way to "update".

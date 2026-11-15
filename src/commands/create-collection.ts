@@ -42,7 +42,6 @@ const attributes = attributesFile
 assertOnChainLimits({ name, symbol });
 
 const umi = await createProjectUmi({
-  keypairPath: getString(flags, "keypair"),
   signer: resolveSignerMode(getString(flags, "signer", process.env.SIGNER)),
   browserAction: "collection",
 });
@@ -85,6 +84,8 @@ const signature = await sendAndConfirm(
     symbol,
     uri,
     sellerFeeBasisPoints: percentAmount(royaltyBps / 100),
+    updateAuthority: wallet,
+    tokenOwner: wallet,
     isCollection: true,
   }),
 );

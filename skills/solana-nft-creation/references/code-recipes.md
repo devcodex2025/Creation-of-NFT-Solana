@@ -7,25 +7,22 @@ script, a backend job, or an agent tool.
 
 ## 0. Setup
 
-```ts
-import { readFileSync } from "node:fs";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import {
-  generateSigner,
-  keypairIdentity,
-  percentAmount,
-  publicKey,
-} from "@metaplex-foundation/umi";
-import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
-import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
+The bundled toolkit creates its Umi instance in `src/lib/umi.ts` with
+`createProjectUmi({ signer: "browser" })`. It opens the loopback bridge and has
+no keypair-file mode; the wallet stays in Phantom, Solflare or Backpack.
 
-const secret = JSON.parse(readFileSync("keypair.json", "utf8")) as number[];
+For a standalone app, configure Umi with your wallet adapter's identity plugin
+and the Irys **web** uploader. The snippets below assume `umi` is already
+configured this way and that a human approves each signature.
+
+```ts
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
+import { irysUploader } from "@metaplex-foundation/umi-uploader-irys/web";
 
 const umi = createUmi("https://api.devnet.solana.com")
   .use(mplTokenMetadata())
   .use(irysUploader({ address: "https://devnet.irys.xyz" }));
-
-umi.use(keypairIdentity(umi.eddsa.createKeypairFromSecretKey(Uint8Array.from(secret))));
 ```
 
 For mainnet, change the RPC and the Irys address to

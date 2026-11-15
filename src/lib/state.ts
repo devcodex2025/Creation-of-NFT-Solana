@@ -1,7 +1,15 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import * as path from "node:path";
 import { cluster } from "./config";
-import { repoRoot } from "./keypair";
+import { repoRoot } from "./paths";
+import type { SignedTransactionRecord } from "./tx";
 
 export interface NftRecord {
   address: string;
@@ -20,6 +28,13 @@ export interface CollectionRecord {
   uri: string;
   signature: string;
   createdAt: string;
+  /**
+   * `pending` means the create transaction was signed but not recorded as
+   * confirmed. A re-run checks the chain before creating a second collection.
+   */
+  status?: "pending" | "minted";
+  /** Signed bytes kept only until the collection is confirmed. */
+  signed?: SignedTransactionRecord | null;
 }
 
 /**
@@ -33,6 +48,13 @@ export interface BatchItemRecord {
   metadataUri?: string;
   address?: string;
   signature?: string;
+  /**
+   * `pending` means the mint transaction was signed. The recorded address lets
+   * a re-run ask the chain whether the item landed before minting it again.
+   */
+  status?: "pending" | "minted";
+  /** Signed bytes kept only until the mint is confirmed, so it can be re-sent. */
+  signed?: SignedTransactionRecord | null;
 }
 
 export interface BatchRecord {
@@ -62,7 +84,14 @@ export function readState(): ProjectState {
     return { cluster, nfts: [] };
   }
 
-  const parsed = JSON.parse(readFileSync(file, "utf8")) as Partial<ProjectState>;
+  let parsed: Partial<ProjectState>;
+  try {
+    parsed = JSON.parse(readFileSync(file, "utf8")) as Partial<ProjectState>;
+  } catch {
+    throw new Error(
+      `State file ${file} is not valid JSON. Do not delete it: it may be the only record of minted items. Inspect or restore it first.`,
+    );
+  }
   return {
     cluster,
     wallet: parsed.wallet,
@@ -72,10 +101,21 @@ export function readState(): ProjectState {
   };
 }
 
+/**
+ * Writes through a temporary file and renames it into place. A crash mid-write
+ * leaves the previous state intact instead of a truncated JSON file.
+ */
 function writeState(state: ProjectState): void {
   const file = stateFilePath();
   mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(file, `${JSON.stringify(state, null, 2)}\n`);
+  const temp = `${file}.${process.pid}.tmp`;
+  writeFileSync(temp, `${JSON.stringify(state, null, 2)}\n`);
+  try {
+    renameSync(temp, file);
+  } catch (error) {
+    rmSync(temp, { force: true });
+    throw error;
+  }
 }
 
 export function saveCollection(record: CollectionRecord): void {
@@ -145,13 +185,39 @@ export function saveBatchItem(
       ? state.batch.items
       : [];
   const index = items.findIndex((entry) => entry.name === item.name);
-  if (index >= 0) items[index] = { ...items[index], ...item };
-  else items.push(item);
+  const target: BatchItemRecord =
+    index >= 0 ? items[index] : { name: item.name };
+
+  const { signed, ...rest } = item;
+  Object.assign(target, rest);
+  if (signed === null) delete target.signed;
+  else if (signed) target.signed = signed;
+
+  if (index >= 0) items[index] = target;
+  else items.push(target);
+
   state.batch = {
     collection,
     items,
     updatedAt: new Date().toISOString(),
   };
+  writeState(state);
+}
+
+/**
+ * Drops the mint address of a transaction that never landed. Upload URIs stay,
+ * so a retry does not pay for the same Arweave files twice.
+ */
+export function resetBatchItem(collection: string, name: string): void {
+  const state = readState();
+  if (!state.batch || state.batch.collection !== collection) return;
+  const item = state.batch.items.find((entry) => entry.name === name);
+  if (!item) return;
+  delete item.address;
+  delete item.signature;
+  delete item.signed;
+  delete item.status;
+  state.batch.updatedAt = new Date().toISOString();
   writeState(state);
 }
 

@@ -256,8 +256,8 @@ export function describeTransaction(
 
   if (!label && (transfers.length > 0 || sawSystemTransfer)) {
     if (action === "batch") {
-      label = "Approve batch funding";
-      detail = "Sends SOL to the temporary batch key for rent and uploads.";
+      label = "Approve storage payment";
+      detail = "Pays Irys for the Arweave upload. No temporary wallet is funded.";
     } else {
       label = "Approve storage payment";
       detail = "Pays Irys for the Arweave upload.";

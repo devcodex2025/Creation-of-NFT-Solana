@@ -3,6 +3,12 @@
 Scope: the toolkit in `src/`, the browser bridge, the installable skill in
 `skills/solana-nft-creation/`, and the dependency tree in `package-lock.json`.
 
+> **Update, 2026-11-15:** the keypair and temporary-key design described in this
+> report was removed. The toolkit is browser-only now: the key stays in the
+> wallet extension, the wallet owns every item, and `state/` records a mint
+> before broadcast so a crash cannot duplicate it. See `SECURITY.md`. The
+> findings below are the record of the 2026-11-14 audit.
+
 This report follows the security improvement roadmap: protect keys, require
 explicit transaction approval, remove unverified remote code, update
 dependencies, and classify every finding as a confirmed vulnerability, a false
@@ -13,7 +19,7 @@ positive, or an accepted risk.
 | Area | Before | After |
 |---|---|---|
 | `npm audit` | 0 critical, 12 high, 12 moderate, 16 low | 0 critical, 0 high, 16 moderate, 16 low |
-| Keypair files | Implicit read of the Solana CLI wallet | Only the project keypair, or a wallet the user names |
+| Keypair files (removed 2026-11-15) | Implicit read of the Solana CLI wallet | No keypair mode; the key stays in the wallet extension |
 | Signing prompt | Action label only | Recipient, amount, fee, programs, full operation list |
 | External metadata | Parsed and passed through | Size-capped, shape-validated, control characters stripped |
 | `npx` tools | Floating versions | `npx skills@1.8.1`, `npx esrun@3.2.30` |
@@ -30,7 +36,8 @@ sign with, a wallet they never named.
 Fix: the Solana CLI wallet is no longer a candidate. It is read only through an
 explicit `--keypair` or `KEYPAIR_PATH`, and the error message explains how to
 name it. The toolkit restricts a keypair file readable by other local users to
-mode `0600` and writes new keypairs with that mode.
+mode `0600` and writes new keypairs with that mode. Superseded on 2026-11-15:
+the keypair mode was removed entirely; see `SECURITY.md`.
 
 ### 2. Approval did not state what the transaction does (High)
 
@@ -118,7 +125,7 @@ Fixes:
 | `@solana/web3.js@1.99.0` via `jayson` / `uuid` / `stream-json` | Moderate | No fixed 1.x release exists; 2.x and 3.x are breaking rewrites of the RPC layer. The impact is a denial of service in the RPC client, and the user chooses `RPC_URL`. No key or fund exposure. |
 | `@ethersproject/*@5.8.0` via Irys | Low | The Irys bundler carries ethers v5 for Arweave signing. Its `elliptic@6.6.1` path has CVE-2025-14505, and no fixed upstream release exists. The toolkit's Solana signing uses ed25519, not this secp256k1 path. |
 | `@irys/*` and Metaplex `umi-*` moderates | Low / Moderate | Transitive from the same `web3.js` and ethers chains. No direct vulnerable code path in the toolkit. |
-| Temporary batch key in memory | Accepted design | The key exists for one run, can only verify items into the collection while delegated, and is revoked and swept at the end. A crash loses only the remaining rent. Documented in README and SKILL.md. |
+| Temporary batch key in memory (removed 2026-11-15) | Removed | The browser-only release removed the temp key, delegation and sweep. The wallet owns every item and signs each mint; `state/` reconciles in-flight transactions by signature. |
 
 ## Verification performed
 
@@ -133,10 +140,10 @@ Fixes:
   "Create NFT" and "Mint token to the owner".
 - `show-nft` against devnet item `F3XZnED8WDLYSfFhGr2J5FUQHH8Z2nWbubYpHRAEzvnj`
   works after the Metaplex upgrade and returns sanitized off-chain data.
-- A live Phantom run created collection
-  `AASPbqHYjzjPrGKfo8NobjaGHTPbSZn6gK6mEaHB3Sxm` with 24/24 verified items
-  before this audit. That run exercised the bridge, the temporary key, the
-  delegation, the sweep, and the revocation with a real extension.
+- Historical (before the browser-only release): a live Phantom run created
+  collection `AASPbqHYjzjPrGKfo8NobjaGHTPbSZn6gK6mEaHB3Sxm` with 24/24 verified
+  items. That run exercised the bridge, the temporary key, the delegation, the
+  sweep, and the revocation with a real extension.
 - `npm audit` now reports 0 critical and 0 high findings.
 - `skillspector scan <repository> --no-llm` reports 1 low finding: the
   `elliptic@6.6.1` advisory reached through the Irys bundler. There are no high
@@ -144,6 +151,9 @@ Fixes:
 - GitHub Actions: run `43647919047` passed on the release commit; run
   `43648375649` passed every step after the workflow gained the label, bridge,
   security and audit checks.
+- Browser-only release: `typecheck`, `test:state` (15 cases), `test:labels`
+  (17), `test:security` (15) and `test:bridge` (26) pass; `test:e2e` is manual
+  and skips without `E2E_BROWSER=1`.
 
 ## Limitations
 

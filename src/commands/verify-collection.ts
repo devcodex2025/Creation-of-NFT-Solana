@@ -32,7 +32,6 @@ if (!nftAddress) {
 }
 
 const umi = await createProjectUmi({
-  keypairPath: getString(flags, "keypair"),
   signer: resolveSignerMode(getString(flags, "signer", process.env.SIGNER)),
   browserAction: "verify",
 });

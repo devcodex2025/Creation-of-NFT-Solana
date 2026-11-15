@@ -2,23 +2,14 @@
 
 ## Environment
 
-### `No keypair found`
+### `No wallet found`
 
-The CLI looks in `--keypair`, `KEYPAIR_PATH`, then `./keypair.json`. It does
-not read `~/.config/solana/id.json` unless you name it. Create a project
-keypair:
+The CLI signs only through a browser wallet. Run `npm run balance` or any
+signing command and open the bridge URL it prints in the browser where Phantom,
+Solflare or Backpack is installed. There is no keypair-file fallback: the CLI
+does not read `keypair.json`, `KEYPAIR_PATH`, or `~/.config/solana/id.json`.
 
-```bash
-npm run keypair
-```
-
-If you already have a keypair elsewhere, point to it:
-
-```bash
-KEYPAIR_PATH=/absolute/path/id.json npm run balance
-```
-
-### `--signer browser` does not connect
+### The wallet bridge does not connect
 
 The CLI opens a page on `127.0.0.1`; if no tab appears, copy the URL it printed
 into a browser on the same machine. The bridge is loopback only by design, so it
@@ -37,12 +28,13 @@ cannot be opened from another device.
 - **Nothing happens after Connect** — some wallets require the site to be
   focused. Click the extension icon and approve there.
 - **A remote/SSH machine** — the bridge binds to `127.0.0.1`, so forward the
-  printed port (`ssh -L <port>:127.0.0.1:<port>`) or use a keypair file instead.
+  printed port (`ssh -L <port>:127.0.0.1:<port>`) and open the forwarded URL in
+  a browser on your machine. The wallet extension must be in that browser.
 
-An item mint asks for four signatures: two Arweave upload messages, the mint
-transaction and the collection verification. Creating the collection first adds
-three: two uploads and the collection mint. When Irys needs a top-up it adds one
-storage payment transaction. The page names each request, so you can see which
+An item mint asks for one transaction approval after its uploads. Uploads need
+one signature per file: the image and the metadata JSON. Creating the collection
+adds two uploads and one transaction. Irys adds one storage payment per upload
+call when its balance is short. The page names each request, so you can see which
 step you are approving. Rejecting any of them aborts the command before it
 spends SOL on the rest.
 
@@ -87,7 +79,7 @@ Cyrillic characters use 2+ bytes. Shorten the name.
 
 The wallet is not the update authority of the collection. Either:
 
-- run `verify` with the collection authority keypair, or
+- run `verify` while connected to the collection authority wallet, or
 - create the collection from the same wallet.
 
 ### `Transaction simulation failed: ... custom program error: 0x...`

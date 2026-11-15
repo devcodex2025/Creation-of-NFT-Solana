@@ -47,7 +47,9 @@ interface PendingRequest {
   reject: (error: Error) => void;
 }
 
-const TIMEOUT_MS = 3 * 60 * 1000;
+const TIMEOUT_MS = Number(
+  process.env.NFT_BRIDGE_TIMEOUT_MS ?? 3 * 60 * 1000,
+);
 const MAX_BODY_BYTES = 64 * 1024;
 const POLL_INTERVAL_MS = 400;
 

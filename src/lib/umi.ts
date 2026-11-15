@@ -2,7 +2,6 @@ import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import {
   generateSigner,
-  keypairIdentity,
   publicKey as umiPublicKey,
   signerIdentity,
   sol,
@@ -16,13 +15,13 @@ import {
   fromWeb3JsTransaction,
   toWeb3JsTransaction,
 } from "@metaplex-foundation/umi-web3js-adapters";
-import { irysUploader } from "@metaplex-foundation/umi-uploader-irys";
+import { irysUploader } from "@metaplex-foundation/umi-uploader-irys/web";
 import { VersionedTransaction } from "@solana/web3.js";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import * as path from "node:path";
 import { cluster, connection } from "./config";
-import { loadSecretKey, repoRoot } from "./keypair";
+import { repoRoot } from "./paths";
 import { connectBrowserWallet, type BrowserWallet, type RequestContext } from "./browser-bridge";
 import { describeTransaction, type BrowserAction } from "./approval";
 
@@ -31,16 +30,30 @@ export { describeTransaction } from "./approval";
 
 export type StorageBackend = "irys" | "local";
 
-/** How the CLI gets signatures. */
-export type SignerMode = "keypair" | "browser" | "readonly";
+/** How the CLI gets signatures. Keypair signing was removed. */
+export type SignerMode = "browser" | "readonly";
 
 export function resolveSignerMode(value?: string): SignerMode {
-  const mode = (value ?? "keypair").trim().toLowerCase();
-  if (mode === "keypair" || mode === "file" || mode === "local") return "keypair";
-  if (mode === "browser" || mode === "wallet" || mode === "phantom") return "browser";
-  if (mode === "readonly" || mode === "read-only") return "readonly";
+  const mode = (value ?? "browser").trim().toLowerCase();
+  if (
+    mode === "browser" ||
+    mode === "wallet" ||
+    mode === "phantom" ||
+    mode === "solflare" ||
+    mode === "backpack"
+  ) {
+    return "browser";
+  }
+  if (mode === "readonly" || mode === "read-only" || mode === "read") {
+    return "readonly";
+  }
+  if (mode === "keypair" || mode === "file" || mode === "local") {
+    throw new Error(
+      'Keypair signing was removed. Use --signer browser, or --signer readonly for read-only commands.',
+    );
+  }
   throw new Error(
-    `Unknown signer "${value}". Use "keypair" (local keypair file) or "browser" (Phantom, Solflare, Backpack).`,
+    `Unknown signer "${value}". Use "browser" (Phantom, Solflare, Backpack) or "readonly".`,
   );
 }
 
@@ -83,6 +96,17 @@ function createLocalUploader(): UploaderInterface {
         "metadata.json",
         new TextEncoder().encode(JSON.stringify(json, null, 2)),
       ),
+    getUploadPrice: async () => sol(0),
+  };
+}
+
+function createReadOnlyUploader(): UploaderInterface {
+  const fail = async (): Promise<never> => {
+    throw new Error("Read-only mode cannot upload files.");
+  };
+  return {
+    upload: fail,
+    uploadJson: fail,
     getUploadPrice: async () => sol(0),
   };
 }
@@ -151,7 +175,6 @@ function createBrowserSigner(
 }
 
 export interface ProjectUmiOptions {
-  keypairPath?: string;
   signer?: SignerMode;
   browserAction?: BrowserAction;
 }
@@ -160,26 +183,27 @@ export async function createProjectUmi(
   options: ProjectUmiOptions = {},
 ): Promise<Umi> {
   const umi = createUmi(connection);
-  const mode = options.signer ?? "keypair";
+  const mode = options.signer ?? "browser";
 
   if (mode === "browser") {
     const wallet = await connectBrowserWallet();
     console.log(`\n🔗  Wallet connected: ${wallet.publicKey}`);
     console.log(`   Approve each transaction in the browser tab.`);
-    umi.use(signerIdentity(createBrowserSigner(wallet, options.browserAction ?? "transaction")));
-  } else if (mode === "readonly") {
+    umi.use(
+      signerIdentity(
+        createBrowserSigner(wallet, options.browserAction ?? "transaction"),
+      ),
+    );
+  } else {
     // Reads do not need a real wallet; a throwaway signer keeps umi happy.
     umi.use(signerIdentity(generateSigner(umi)));
-  } else {
-    const secret = loadSecretKey(options.keypairPath);
-    const umiKeypair = umi.eddsa.createKeypairFromSecretKey(secret);
-    secret.fill(0);
-    umi.use(keypairIdentity(umiKeypair));
   }
 
   umi.use(mplTokenMetadata());
 
-  if (getStorageBackend() === "irys") {
+  if (getStorageBackend() === "local") {
+    umi.uploader = createLocalUploader();
+  } else if (mode === "browser") {
     const defaultAddress =
       cluster === "mainnet-beta"
         ? "https://uploader.irys.xyz"
@@ -191,7 +215,7 @@ export async function createProjectUmi(
       }),
     );
   } else {
-    umi.uploader = createLocalUploader();
+    umi.uploader = createReadOnlyUploader();
   }
 
   return umi;

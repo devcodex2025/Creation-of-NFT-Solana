@@ -115,8 +115,9 @@ The item's update authority does **not** need to match the collection's. But
 the collection's authority must sign verification, so the minter needs it (or a
 delegate) at mint time.
 
-For a large drop, use a collection delegate or a server-side signer with the
-collection authority; do not ship the collection key to a client.
+For a large drop, use a collection delegate so the collection authority can stay
+cold; the bundled toolkit signs verification with the wallet that controls the
+collection.
 
 ## Collection size
 

@@ -1,23 +1,28 @@
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { getNumber, getString, parseArgs } from "../lib/args";
+import { connectBrowserWallet } from "../lib/browser-bridge";
 import { cluster, connection, rpcUrl } from "../lib/config";
-import { loadKeypair } from "../lib/keypair";
 
 const flags = parseArgs();
 const amount = getNumber(flags, "amount", 1);
+let address = getString(flags, "address");
 
 if (cluster === "mainnet-beta") {
   throw new Error("Refusing to airdrop on mainnet-beta. Use real SOL.");
 }
 
-const keypair = loadKeypair(getString(flags, "keypair"));
+if (!address) {
+  const wallet = await connectBrowserWallet();
+  address = wallet.publicKey;
+  await wallet.close();
+}
 
 console.log(`\n🚰  Requesting ${amount} SOL on ${cluster}`);
-console.log(`   Wallet : ${keypair.publicKey}`);
+console.log(`   Wallet : ${address}`);
 
 try {
   const signature = await connection.requestAirdrop(
-    keypair.publicKey,
+    new PublicKey(address),
     Math.round(amount * LAMPORTS_PER_SOL),
   );
   const latestBlockhash = await connection.getLatestBlockhash();
@@ -46,5 +51,5 @@ try {
   process.exit(1);
 }
 
-const balance = await connection.getBalance(keypair.publicKey);
+const balance = await connection.getBalance(new PublicKey(address));
 console.log(`Balance: ${balance / LAMPORTS_PER_SOL} SOL (${rpcUrl})\n`);

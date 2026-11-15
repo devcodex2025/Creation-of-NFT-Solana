@@ -2,24 +2,16 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { getString, parseArgs } from "../lib/args";
 import { connectBrowserWallet } from "../lib/browser-bridge";
 import { cluster, connection, explorerAddressUrl, rpcUrl } from "../lib/config";
-import { loadKeypair } from "../lib/keypair";
 import { setWallet } from "../lib/state";
-import { resolveSignerMode } from "../lib/umi";
 
 const flags = parseArgs();
 const explicitAddress = getString(flags, "address");
-const signerMode = resolveSignerMode(
-  getString(flags, "signer", process.env.SIGNER),
-);
 
 let address = explicitAddress;
-if (!address && signerMode === "browser") {
+if (!address) {
   const wallet = await connectBrowserWallet();
   address = wallet.publicKey;
   await wallet.close();
-} else if (!address) {
-  const keypair = loadKeypair(getString(flags, "keypair"));
-  address = keypair.publicKey.toBase58();
   setWallet(address);
 }
 

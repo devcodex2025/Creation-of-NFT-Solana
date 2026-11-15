@@ -1,5 +1,31 @@
 # Changelog
 
+## 3.0.0 — 2026-11-15
+
+### Breaking
+
+- The CLI is browser-only. Keypair-file signing, `--keypair`, `KEYPAIR_PATH`,
+  `npm run keypair`, and `src/lib/keypair.ts` were removed. Signing happens in
+  Phantom, Solflare or Backpack through the loopback bridge; `--signer readonly`
+  is the only other mode.
+- `create:batch` no longer funds a temporary key, delegates verification, or
+  sweeps SOL. The wallet owns every item and is the update authority; each item
+  is minted and verified in one transaction.
+
+### Added
+
+- Crash-safe batch resume: the mint address and signed bytes are recorded before
+  broadcast, in-flight transactions are settled by signature, and state writes
+  are atomic. `npm run test:state` covers it.
+- `sendAndConfirm` simulates before signing, confirms at `confirmed`, retries
+  429/timeout with the same signed bytes, and re-checks an unknown result.
+
+### Changed
+
+- `create:batch` reports `--limit` deferrals separately and rejects duplicate
+  item names.
+- `test:e2e` is manual and skips unless `E2E_BROWSER=1`; `test:state` is new.
+
 ## 2.6.0 — 2026-11-15
 
 ### Security

@@ -87,12 +87,20 @@ royalties rather than promising enforcement with standard NFTs.
 
 Rules that keep batches reliable:
 
-- One mint needs several accounts; 5–10 mints per transaction is a realistic
-  ceiling before hitting the 1232-byte limit.
-- Every mint needs its own signer keypair. Generate and store them before
-  sending, or you lose the ability to retry the same mint.
-- Use a dedicated RPC and confirm with `finalized` before recording success.
-- Persist progress after each batch; a retry must skip completed mints.
+- One Token Metadata mint needs several accounts. A mint plus verification is
+  about 835 bytes; two full mint+verify pairs do not fit in the 1232-byte
+  transaction limit. Two mints without verification fit (about 1156 bytes), so
+  batch at most two mints and verify separately, or use Core for denser
+  batches.
+- The mint account is a new signer, but the wallet stays the owner and the
+  update authority. Record the mint address and the signed bytes before
+  broadcasting. If the blockhash expires, generate a new mint; never rebuild a
+  transaction after it has a signature.
+- Confirm at `confirmed`, then read the account back before recording success.
+  Use `finalized` only for the final assertion.
+- Persist an intent record before sending and reconcile it against the chain
+  after a crash. A retry must skip completed mints and settle in-flight ones by
+  signature.
 - Cap concurrency to what the RPC tolerates; handle `429` with backoff.
 
 Pseudo-code:
@@ -140,7 +148,7 @@ Keep, outside the chain:
 - metadata JSON for every item,
 - Arweave IDs,
 - mint addresses and signatures,
-- the keypair or multisig used.
+- the wallet address or multisig used.
 
 If something breaks in six months, this archive is the only way to reconstruct
 what happened.

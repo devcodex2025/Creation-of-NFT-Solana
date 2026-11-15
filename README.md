@@ -27,7 +27,7 @@ agents can do the whole workflow correctly.
 Describe the result in plain language and the agent does the work:
 
 - creates a collection and mints NFTs into it;
-- mints a whole collection from one manifest, in batches, with a few wallet approvals;
+- mints a whole collection from one manifest, with crash-safe resume;
 - uploads the art and metadata to Arweave before minting;
 - verifies each item and attaches it to the right collection;
 - finds why an item shows without a preview or with broken metadata, then fixes the metadata or the verification;
@@ -42,7 +42,7 @@ and Explorer links.
 ## Install the skill
 
 ```bash
-npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v2.6.0/skills/solana-nft-creation
+npx skills@1.8.1 add https://github.com/devcodex2025/Creation-of-NFT-Solana/tree/v3.0.0/skills/solana-nft-creation
 ```
 
 Restart the agent so it reloads its skill list.
@@ -50,7 +50,7 @@ Restart the agent so it reloads its skill list.
 The skill drives the toolkit in this repository. Clone it once:
 
 ```bash
-git clone --branch v2.6.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
+git clone --branch v3.0.0 --depth 1 https://github.com/devcodex2025/Creation-of-NFT-Solana
 cd Creation-of-NFT-Solana && npm ci
 ```
 
@@ -77,8 +77,8 @@ More things to ask for:
 - `Mint the remaining items, skip the ones already done, and keep the fees low.`
 
 The agent reads `SKILL.md`, checks the limits before spending SOL and verifies
-the result on chain. Signatures stay in your wallet: a keypair file by default,
-Phantom or Solflare with `--signer browser`.
+the result on chain. Signatures stay in your wallet: Phantom, Solflare or
+Backpack through a local bridge. The CLI has no keypair-file mode.
 
 <details>
 <summary>Using another agent?</summary>
@@ -114,17 +114,17 @@ uploads.
 
 - **Collection + items** — create a verified Metaplex collection and mint NFTs into it.
 - **Whole collections** — `create:batch` mints every item in a manifest, with resume on failure.
-- **Fewer signatures** — a batch needs three browser approvals, not three per item.
-- **Fee control** — two upload bundles instead of two per item, one transaction per mint plus verification, optional `--priority-fee`, and unused SOL swept back.
+- **Crash-safe resume** — every mint is recorded before broadcast and in-flight transactions are settled by signature, so a retry never duplicates an item.
+- **Fee control** — four upload calls instead of two per item, one transaction per mint plus verification, and optional `--priority-fee`.
 - **Automatic verification** — `create:nft` verifies membership by default; `verify` fixes existing mints.
 - **State-aware CLI** — addresses are stored in `state/<cluster>.json`, so you never paste them between steps.
 - **Safe updates** — preserves image, attributes and external URL when you only change the name.
 - **Validation** — name (32 bytes), symbol (10), URI (200), royalty (0–10000 bps) checked before sending.
 - **Arweave storage** — Irys uploader with the endpoint chosen from the cluster.
 - **Inspect** — `show` prints on-chain data, collection verification and off-chain JSON.
-- **Browser wallets** — `--signer browser` signs with Phantom, Solflare or Backpack; the key stays in the extension.
+- **Browser wallets** — signing happens in Phantom, Solflare or Backpack; the key stays in the extension and the CLI has no keypair-file mode.
 - **Devnet first** — a mainnet batch refuses to start without `--mainnet`.
-- **Local testing** — `test:e2e` runs the full flow against a local validator with no faucet.
+- **Local testing** — `test:e2e` runs the flow against a local validator; it is manual and skips without `E2E_BROWSER=1`.
 - **AI agent skill** — a complete `SKILL.md` plus references for professional NFT work.
 
 ## Quickstart
@@ -132,18 +132,21 @@ uploads.
 ### 1. Prerequisites
 
 - Node.js 20+
-- A Solana keypair (the toolkit can generate one)
+- A browser wallet: Phantom, Solflare or Backpack
 
 ### 2. Install
 
 See [Install the skill](#install-the-skill). The same clone runs the CLI.
 
-### 3. Create and fund a wallet
+### 3. Connect and fund a wallet
 
 ```bash
-npm run keypair
 npm run balance
 ```
+
+This opens the local bridge: connect Phantom, Solflare or Backpack, approve the
+connection, and the command prints that wallet's address and balance. Every
+later signing command reuses the same flow.
 
 For devnet, request SOL at [faucet.solana.com](https://faucet.solana.com).
 For free, unlimited testing, run a local validator (see [Testing](#testing)).
@@ -206,15 +209,17 @@ npm run create:batch -- --manifest collection.json
 
 The dry run prints the item count, the rent estimate and every name against the
 Metaplex byte limits, without reading a file from the network or opening a
-wallet. The real run creates the collection, uploads all art in one bundle and
-all metadata in a second bundle, then mints each item and verifies it in the
-same transaction.
+wallet. The real run uploads the collection image and metadata, then all item
+images in one bundle and all item metadata in a second bundle, creates the
+collection, and mints each item with its verification in the same transaction.
 
-With `--signer browser` the whole collection needs three approvals: fund a
-temporary key, create the collection and delegate verification, revoke the
-delegation. The temporary key lives in memory only, mints every item, and sends
-what is left back to your wallet at the end. `--verify-creators` adds one
-approval per 20 items.
+Signing happens in the browser wallet. Uploads need one signature per file:
+collection image and metadata, then each item image and metadata. Irys adds a
+storage payment when its balance is short. Each item is one transaction with its
+collection verification, so a 9-item collection is about 20 upload signatures,
+up to 4 storage payments, 1 collection transaction and 9 item transactions. A
+crash mid-run is safe: the CLI records the mint address and the signed bytes
+before broadcast and reconciles them on the next run.
 
 ### 7. Check it
 
@@ -248,9 +253,9 @@ That is the whole loop. Everything else is optional.
 | Last item | [`GoCakv4u7BUU1odokfFUMgL9CzfFGNRuULMW1FyMgYri`](https://explorer.solana.com/address/GoCakv4u7BUU1odokfFUMgL9CzfFGNRuULMW1FyMgYri?cluster=devnet) |
 
 All 24 items carry `collection.verified = true` and a verified creator on chain,
-the collection reports 24 verified items, and the temporary batch key was
-revoked and closed. Open any item in Explorer and check the metadata account to
-see the flag yourself.
+and the collection reports 24 verified items. That run predates the browser-only
+release, so it used the old temporary-key flow; the current batch has no
+temporary key and the wallet owns every item.
 
 An earlier single-item example is still live at
 [`4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX`](https://explorer.solana.com/address/4ALZXmgMxe5ii6WGVpCXyAXm9qCdYwKpvGCRpeMovqJX?cluster=devnet).
@@ -294,26 +299,25 @@ Six of the 24 items above, straight from the devnet run. Click one to open it in
 
 | Command | What it does |
 |---|---|
-| `npm run keypair` | Generate `keypair.json` (refuses to overwrite) |
-| `npm run balance` | Show SOL balance for the wallet or `--address` |
+| `npm run balance` | Connect a wallet (or use `--address`) and show its SOL balance |
 | `npm run fund -- --amount 5` | Airdrop on localnet/devnet when the faucet allows |
 | `npm run create:collection` | Upload art + metadata and mint a collection NFT |
 | `npm run create:nft` | Upload art + metadata and mint an NFT into the collection |
-| `npm run create:batch` | Mint a whole collection from one manifest, with batches and resume |
+| `npm run create:batch` | Mint a whole collection from one manifest, with crash-safe resume |
 | `npm run verify` | Verify an existing NFT belongs to a collection |
 | `npm run update` | Update metadata, image, royalty, authority or immutability |
 | `npm run show` | Print on-chain + off-chain NFT details |
-| `npm run test:e2e` | Full local end-to-end test |
+| `npm run test:e2e` | Manual browser-wallet test; skipped unless `E2E_BROWSER=1` |
 | `npm run test:bridge` | Security checks for the local wallet bridge |
+| `npm run test:state` | Write-ahead log and atomic state checks |
 | `npm run typecheck` | TypeScript check |
 
 Every command accepts `--help`-style flags documented below, and reads
-configuration from `.env` or the environment. Two flags work on every command:
+configuration from `.env` or the environment. These flags work on every command:
 
 | Flag | Default | Notes |
 |---|---|---|
-| `--keypair` | `KEYPAIR_PATH` or `./keypair.json` | Keypair file to sign with |
-| `--signer` | `SIGNER` or `keypair` | `keypair`, `browser` (Phantom/Solflare), `readonly` |
+| `--signer` | `SIGNER` or `browser` | `browser` (Phantom/Solflare/Backpack) or `readonly` |
 
 ### Passing flags on Windows PowerShell
 
@@ -380,16 +384,16 @@ default mint is hard to miss.
 | `--collection` | from manifest | Mint into an existing collection instead of creating one |
 | `--dry-run` | off | Print the plan and limits, touch nothing |
 | `--limit` | all items | Mint only the first N pending items |
-| `--fund` | estimated | SOL to move to the temporary batch key |
 | `--priority-fee` | `0` | Micro-lamports per compute unit |
-| `--verify-creators` | off | Also verify the wallet as creator, one approval per 20 items |
 | `--mainnet` | off | Required to run on `mainnet-beta` |
 | `--name`, `--symbol`, `--image`, `--royalty` | from manifest | Override the collection block |
 
 Manifest paths are resolved relative to the manifest file. An item needs `name`
 and `image`; `attributesFile` is optional and may hold either a trait array or a
-full metadata JSON. Progress is written to `state/<cluster>.json`, so a run that
-stops halfway resumes without paying for the same uploads twice:
+full metadata JSON. Progress is written to `state/<cluster>.json`. Before
+signing, the CLI records the mint address and the signed bytes; a resumed run
+reconciles them, so an item that landed is kept and one that expired is minted
+again:
 
 ```bash
 npm run create:batch -- --manifest collection.json --collection <address>
@@ -431,9 +435,9 @@ flowchart LR
 3. **Mint** — `createNft` from `@metaplex-foundation/mpl-token-metadata` creates
    the mint, token account and metadata account.
 4. **Verify** — `verifyCollectionV1` proves the collection's update authority
-   approved the item. Marketplaces use this flag. In a batch the wallet delegates
-   that right to a temporary key with `delegateCollectionV1`, and revokes it when
-   the run ends, so the wallet signs once instead of once per item.
+   approved the item. Marketplaces use this flag. In a batch the wallet signs
+   the mint and the verification in the same transaction; no temporary key and
+   no delegation are involved.
 5. **Record** — the address and signature go to `state/<cluster>.json` so the
    next command can find them.
 
@@ -450,10 +454,11 @@ These are the only costs. Every one of them is paid on chain from your wallet to
 Solana and to the storage network. The toolkit takes no fee of its own, adds no
 markup, and holds no funds at any point.
 
-A batch keeps the count down: two storage payments for the whole collection, one
-transaction per item instead of three, and the temporary key is swept back to
-your wallet at the end. 24 items cost roughly 0.23 SOL of rent on devnet, plus
-storage, plus 26 transactions.
+A batch does not change rent. It cuts uploads to four calls and mints each item
+with its collection verification in one transaction. On mainnet, budget roughly
+0.017 SOL per item including the 0.01 SOL Token Metadata create fee, plus about
+0.018 SOL for the collection: ~0.17 SOL for 9 items, ~0.43 SOL for 24, before
+storage. A devnet 9-item run measured 0.172 SOL including storage.
 
 ## Project structure
 
@@ -467,11 +472,10 @@ storage, plus 26 transactions.
 │   │   ├── verify-collection.ts
 │   │   ├── update-nft.ts
 │   │   ├── show-nft.ts
-│   │   ├── keypair.ts
 │   │   ├── balance.ts
 │   │   └── fund.ts
 │   └── lib/               # config, metadata rules, uploads, state
-├── tests/e2e.localnet.ts  # full flow against a local validator
+├── tests/                 # bridge, labels, security, state and manual e2e tests
 ├── metadata/              # JSON templates for collections and items
 ├── assets/                # sample artwork
 ├── skills/solana-nft-creation/   # installable AI agent skill
@@ -489,54 +493,38 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the module map.
 |---|---|---|
 | `SOLANA_CLUSTER` | `devnet` | `devnet`, `testnet`, `mainnet-beta`, `localnet` |
 | `RPC_URL` | cluster default | Custom RPC endpoint |
-| `KEYPAIR_PATH` | `./keypair.json` | Keypair JSON path |
-| `SIGNER` | `keypair` | `keypair`, `browser` (Phantom/Solflare), `readonly` |
+| `SIGNER` | `browser` | `browser` (Phantom/Solflare/Backpack) or `readonly` |
 | `STORAGE` | `irys` | `irys` (Arweave) or `local` (dev only) |
 | `IRYS_ADDRESS` | per cluster | Override the Irys bundler |
 | `STATE_DIR` | `./state` | Where addresses are stored |
 
 ### Which wallet pays
 
-By default the CLI signs locally with a keypair file, and that same wallet pays
-rent, transaction fees and storage inside each transaction. Resolution order:
+The connected browser wallet pays rent, transaction fees and storage. The CLI
+never sees a private key, and there is no keypair-file mode or implicit
+fallback to `~/.config/solana/id.json`.
 
-1. `--keypair <path>` on the command,
-2. `KEYPAIR_PATH` in `.env`,
-3. `./keypair.json`.
+- A signing command opens the bridge; connect the wallet you want to use.
+- `balance --address <pubkey>` reads any public address without a wallet.
+- Read-only commands (`show`, `--signer readonly`) never open the bridge.
 
-The Solana CLI wallet at `~/.config/solana/id.json` is not read implicitly.
-Point at it explicitly if you want to use it:
-`KEYPAIR_PATH=~/.config/solana/id.json`. A run therefore never pays from a
-wallet you did not name.
-
-An explicit `--keypair` or `KEYPAIR_PATH` that does not exist is an error. The
-toolkit refuses to fall back to another wallet, so fees never come from an
-account you did not choose. On Linux and macOS the CLI warns when the keypair
-file is readable by other users; `chmod 600` it.
-
-```bash
-npx esrun@3.2.30 src/commands/create-nft.ts --keypair ./wallets/mint.json --name "Lil Turtle #1"
-```
-
-Use a dedicated mint wallet holding only what the launch needs. A keypair file
-gives full control of the account to anyone who reads it.
+Use a dedicated mint wallet holding only what the launch needs.
 
 Mainnet checklist before switching `SOLANA_CLUSTER=mainnet-beta`:
 
 - fund the wallet with real SOL,
 - test the exact metadata on devnet first,
-- back up the keypair,
+- back up the wallet (hardware wallet or extension recovery, stored offline),
 - decide who keeps the update authority,
 - read [the launch checklist](skills/solana-nft-creation/references/launch-checklist.md).
 
-### Signing with Phantom or Solflare
+### Signing with Phantom, Solflare or Backpack
 
-If you would rather keep the key inside a browser extension, pass
-`--signer browser`. The CLI starts a one-page server on `127.0.0.1`, opens it,
-and asks the page to sign:
+The browser wallet is the only signing mode. A signing command starts a one-page
+server on `127.0.0.1`, opens it, and asks the page to sign:
 
 ```bash
-npx esrun@3.2.30 src/commands/create-nft.ts --signer browser --name "Lil Turtle #1" --royalty 5
+npx esrun@3.2.30 src/commands/create-nft.ts --name "Lil Turtle #1" --royalty 5
 ```
 
 1. The page detects Phantom, Solflare or Backpack through Wallet Standard.
@@ -551,21 +539,17 @@ If the tab does not open, the CLI prints the bridge URL; paste it into the
 browser where the extension is installed. The page is loopback-only, so it has
 to stay on this machine.
 
-Minting one item takes four approvals: two Arweave upload messages, the mint
-transaction and the collection verification transaction. Creating the collection
-first takes three more: two uploads and the collection mint. When Irys needs a
-top-up, it adds one storage payment transaction, so a first run can ask for one
-more.
+Minting one item needs one transaction approval after its uploads. Uploads need
+one signature per file: the image and the metadata JSON. Creating the collection
+adds the same two uploads and one collection transaction. Irys adds a storage
+payment per upload call when its balance is short.
 
-A batch is different, and this is the point of it: the whole collection takes
-three approvals. The CLI funds a temporary key that lives in memory, the wallet
-creates the collection and delegates verification to that key, every item is
-minted and verified without the wallet, and the wallet revokes the delegation at
-the end. `--verify-creators` adds one approval per 20 items. The page shows a
-network badge, Devnet or Mainnet with a real-funds
-warning, and names the request you are approving, so a long run is easy to
-follow. Nothing is signed silently, so this mode is for a human at the keyboard.
-An autonomous agent cannot approve for you.
+A batch follows the same rules; it does not fund a temporary key or delegate
+verification. A 9-item collection is about 20 upload signatures, up to 4 storage
+payments, 1 collection transaction and 9 item transactions. The page shows a
+network badge, Devnet or Mainnet with a real-funds warning, and names the
+request you are approving. Nothing is signed silently, so this mode is for a
+human at the keyboard. An autonomous agent cannot approve for you.
 
 The bridge is loopback only. It listens on `127.0.0.1` with a random port, a
 fresh 32-byte token per run, a `Host` header check, no cross-origin requests, and
@@ -573,8 +557,8 @@ it shuts down when the command finishes or after three minutes.
 `npm run test:bridge` covers those properties.
 
 `--signer readonly` builds a read-only client for commands that never sign
-(`show`). `balance --signer browser` connects, reads the address, and closes the
-bridge without signing anything.
+(`show`). `balance` connects, reads the address, and closes the bridge without
+signing anything.
 
 ## Metadata
 
@@ -669,7 +653,7 @@ Install it at the [top of this README](#install-the-skill).
 |---|---|---|
 | `Attempt to load a program that does not exist` | Local validator without Token Metadata | Add `--clone-upgradeable-program metaqbxx...` |
 | `410 Gone` on airdrop | Public devnet faucet disabled | Use faucet.solana.com or localnet |
-| `Not the update authority` | Wrong keypair | Use the collection's update authority |
+| `Not the update authority` | Wrong wallet | Connect the collection's update authority |
 | `Verified: false` after mint | Collection authority differs | Run `verify` with the collection authority |
 | `Name is N bytes` | UTF-8 limit | Shorten the name |
 | `Collection ... was not found` | State points at an old ledger | Re-create the collection or pass `--collection` |
@@ -681,7 +665,7 @@ More: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ## Security
 
-- Never commit `keypair.json` or `.env`.
+- Never commit `.env`, `state/`, `uploads/`, or a wallet export.
 - The update authority can rewrite metadata and royalties. Protect it.
 - Immutability is irreversible. `--immutable` is a one-way door.
 - Private keys never cross the browser bridge. It carries unsigned transaction
